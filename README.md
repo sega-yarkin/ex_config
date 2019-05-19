@@ -22,3 +22,35 @@ to easily express configuration your application needs.
 ## Installation
 
 # Usage
+
+Don not use this package yet, the version can show how stable the package is.
+
+But a simple example can look like:
+
+```elixir
+# lib/my_app/config.ex
+defmodule MyApp.Config do
+  # Inject useful macros 
+  use ExConfig, otp_app: :my_app
+
+  # Add shorthands for types
+  alias ExConfig.Type.{Raw, Integer, String}
+
+  # Define config parameters
+  env :port, Integer, range: 1..65535, default: 3000
+  env :addr, String, default: "*"
+  # Define dynamic parameter (just a function)
+  dyn :listen_on, do: "#{addr()}:#{port()}"
+end
+```
+
+And example how to use it from other modules:
+
+```elixir
+# lib/my_app.ex
+defmodule MyApp do
+  def start(_, _) do
+    HttpServer.start(MyApp.Config.listen_on)
+  end
+end
+```
