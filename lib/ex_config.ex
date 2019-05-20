@@ -1,6 +1,9 @@
 defmodule ExConfig do
   @spec __using__(keyword) :: Macro.t
   defmacro __using__(opts) do
+    unless Keyword.get(opts, :otp_app),
+      do: raise ArgumentError, "'otp_app' options is required"
+
     quote do
       use ExConfig.Mod, unquote(opts)
     end

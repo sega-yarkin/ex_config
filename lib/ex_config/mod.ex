@@ -191,9 +191,6 @@ defmodule ExConfig.Mod do
 
       def unquote(all)() do
         for name <- unquote(list)(), do: {name, unquote(single)(name)}
-        # names  = unquote(list)()
-        # values = Enum.map(names, &(unquote(single)(&1)))
-        # Enum.zip(names, values)
       end
     end
   end

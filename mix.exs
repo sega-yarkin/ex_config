@@ -7,7 +7,7 @@ defmodule ExConfig.MixProject do
       version: "0.0.1",
       elixir: "~> 1.8", # TODO: Test for minimal required version.
       start_permanent: Mix.env() == :prod,
-      deps: [],
+      deps: deps(),
       description: description(),
       package: package(),
       name: "ExConfig",
@@ -17,6 +17,12 @@ defmodule ExConfig.MixProject do
 
   def application() do
     [extra_applications: []]
+  end
+
+  defp deps() do
+    [
+      {:dialyxir, "~> 1.0.0-rc.6", only: [:dev], runtime: false},
+    ]
   end
 
   defp description() do
