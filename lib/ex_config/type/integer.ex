@@ -25,6 +25,9 @@ defmodule ExConfig.Type.Integer do
 
   defp parse(data, _) when is_integer(data), do: data
   defp parse(data, opts) when is_list(data), do: parse(to_string(data), opts)
+  defp parse(<<"0b", num :: binary>>, %{base: 2} = opts), do: parse(num, opts)
+  defp parse(<<"0o", num :: binary>>, %{base: 8} = opts), do: parse(num, opts)
+  defp parse(<<"0x", num :: binary>>, %{base: 16} = opts), do: parse(num, opts)
   defp parse(data, opts) when is_binary(data) do
     case Integer.parse(data, opts.base) do
       {value, _} -> {:ok, value}

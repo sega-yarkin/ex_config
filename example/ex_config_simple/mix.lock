@@ -1,3 +1,0 @@
-%{
-  "ex_config": {:hex, :ex_config, "0.0.1", "547d3e03f489b420fda9fc29d5af7c1e6620a21ab1752f5f0b520a6f3c754ab7", [:mix], [], "hexpm"},
-}

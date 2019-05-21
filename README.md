@@ -34,7 +34,7 @@ defmodule MyApp.Config do
   use ExConfig, otp_app: :my_app
 
   # Add shorthands for types
-  alias ExConfig.Type.{Raw, Integer, String}
+  alias ExConfig.Type.{Integer, String}
 
   # Define config parameters
   env :port, Integer, range: 1..65535, default: 3000
@@ -54,3 +54,5 @@ defmodule MyApp do
   end
 end
 ```
+
+Additional examples you can find in `example` directory.
