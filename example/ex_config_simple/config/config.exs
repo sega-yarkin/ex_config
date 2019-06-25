@@ -9,7 +9,11 @@ config :ex_config_simple,
 
 config :ex_config_simple, :storage,
   type: "nfs",
-  permissions: "777"
+  permissions: "777",
+  users: [
+    admins: ["root"],
+    source: "ldap",
+  ]
 
 config :ex_config_simple, :pub_storage,
   name: "buckets/public",

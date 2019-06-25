@@ -24,6 +24,11 @@ defmodule ExConfigSimple.Config do
     env :type, Enum, values: [:local, :nfs, :s3], default: :local
     env :path, String, default: "/tmp"
     env :permissions, Integer, base: 8, default: 0o644
+
+    keyword :users do
+      env :admins
+      env :source, Enum, values: [:local, :ldap, :radius]
+    end
   end
 
   # Before defining resource we need list of its instances.
@@ -34,6 +39,11 @@ defmodule ExConfigSimple.Config do
     env :name, String, required: true
     env :access_key, String, required: true
     env :rate_limit, Integer
+
+    keyword :permissions do
+      env :admin, String, default: "full"
+      env :user, String, default: "ro"
+    end
   end
 
   # Also it could use external module which implements

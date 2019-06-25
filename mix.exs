@@ -4,7 +4,7 @@ defmodule ExConfig.MixProject do
   def project do
     [
       app: :ex_config,
-      version: "0.0.1",
+      version: "0.0.2",
       elixir: "~> 1.8", # TODO: Test for minimal required version.
       start_permanent: Mix.env() == :prod,
       deps: deps(),
