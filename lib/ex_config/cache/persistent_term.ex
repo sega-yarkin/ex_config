@@ -1,7 +1,10 @@
 defmodule ExConfig.Cache.PersistentTerm do
-  # OTP 21.2+
+  @moduledoc """
+  OTP 21.2+
+  """
   @behaviour ExConfig.Cache
 
+  @impl true
   @spec wrap(module, keyword) :: {:ok, map}
   def wrap(module, opts \\ []) do
     cache = get_config_data(module)
@@ -9,10 +12,19 @@ defmodule ExConfig.Cache.PersistentTerm do
     {:ok, cache}
   end
 
+  @impl true
   @spec get(keyword) :: map
   def get(opts \\ []) do
     :persistent_term.get(get_pt_id(opts))
   end
+
+  defmacro getm(opts \\ []) do
+    pt_id = get_pt_id(opts)
+    quote do
+      :persistent_term.get(unquote(pt_id))
+    end
+  end
+
 
   @spec get_pt_id(keyword) :: any
   defp get_pt_id(opts) do

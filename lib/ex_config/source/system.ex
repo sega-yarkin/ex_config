@@ -1,6 +1,5 @@
 defmodule ExConfig.Source.System do
   @behaviour ExConfig.Source
-  alias ExConfig.Param
 
   @enforce_keys [:name]
   defstruct [:name, :default]
@@ -11,12 +10,9 @@ defmodule ExConfig.Source.System do
   }
 
   @impl true
-  def handle(param, %__MODULE__{name: name} = opts) do
+  def handle(%{name: name, default: default}, _) do
     names = List.wrap(name)
-    data = Enum.find_value(names, opts.default, &System.get_env/1)
-    case data do
-      nil  -> %Param{param | data: nil, exist?: false}
-      data -> %Param{param | data: data, exist?: true}
-    end
+    data = Enum.find_value(names, default, &System.get_env/1)
+    {:ok, data}
   end
 end

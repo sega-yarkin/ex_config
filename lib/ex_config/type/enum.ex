@@ -1,5 +1,7 @@
 defmodule ExConfig.Type.Enum do
-  @behaviour ExConfig.Type
+  @moduledoc """
+  """
+  use ExConfig.Type
 
   @enforce_keys [:values]
   defstruct [:values]
@@ -8,22 +10,37 @@ defmodule ExConfig.Type.Enum do
   }
 
   @impl true
-  def init(opts) do
-    enum = struct!(__MODULE__, Keyword.take(opts, [:values]))
-    unless length(enum.values) > 0 do
-      raise ArgumentError, "Enum values cannot be empty"
-    end
-    enum
-  end
+  def validators, do: [
+    values: &validate_values/1,
+  ]
 
   @impl true
-  def handle(data, %{values: values}) when byte_size(data) > 0 do
-    as_atom = String.to_atom(data)
-    if as_atom in values,
-      do: {:ok, as_atom},
-    else: {:error, "Wrong enum value '#{inspect(as_atom)}', only accept #{inspect(values)}"}
+  def handle(data, opts), do: do_handle(data, opts)
+
+  @doc false
+  @spec error(atom, any) :: {:error, String.t}
+  def error(:bad_data, data), do: {:error, "Cannot handle '#{inspect(data)}' as an enum value"}
+  def error(:wrong_value, {data, values}), do: {:error, "Wrong enum value '#{inspect(data)}', only accept #{inspect(values)}"}
+
+  @spec validate_values(any) :: ExConfig.Type.validator_result(list(atom))
+  defp validate_values(values = [_|_]) do
+    if Enum.all?(values, &is_atom/1), do: {:ok, values}, else: :error
+  end
+  defp validate_values(_), do: :error
+
+
+  defp do_handle(data, %{values: values}) when is_atom(data) do
+    if data in values,
+      do: {:ok, data},
+      else: error(:wrong_value, {data, values})
   end
 
-  def handle(data, _), do: {:error, "Cannot handle '#{inspect(data)}' as an enum"}
+  defp do_handle(data, opts) when byte_size(data) > 0 do
+    do_handle(String.to_existing_atom(data), opts)
+  rescue
+    _ -> error(:wrong_value, {data, opts.values})
+  end
+
+  defp do_handle(data, _), do: error(:bad_data, data)
 
 end

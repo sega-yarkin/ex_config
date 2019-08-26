@@ -1,18 +1,18 @@
 defmodule ExConfig.Type.String do
-  @behaviour ExConfig.Type
+  @moduledoc """
+  """
+  use ExConfig.Type
 
   defstruct []
 
   @impl true
-  def init(_), do: %__MODULE__{}
+  def handle(data, _opts), do: do_handle(data)
 
-  @impl true
-  def handle(data, _opts) when is_binary(data), do: {:ok, data}
+  @doc false
+  @spec error(atom, any) :: {:error, String.t}
+  def error(:bad_data, data), do: {:error, "Cannot handle '#{inspect(data)}' as a string"}
 
-  def handle(data, opts) when is_list(data),
-    do: handle(to_string(data), opts)
-
-  def handle(data, _opts),
-    do: {:error, "Cannot handle '#{inspect(data)}' as a string"}
-
+  defp do_handle(data) when is_binary(data), do: {:ok, data}
+  defp do_handle(data) when is_list(data), do: do_handle(to_string(data))
+  defp do_handle(data), do: error(:bad_data, data)
 end

@@ -1,12 +1,14 @@
 defmodule ExConfig.Type.ModuleName do
-  @behaviour ExConfig.Type
+  @moduledoc """
+  """
+  use ExConfig.Type
 
   defstruct should_exist?: true
 
   @impl true
-  def init(opts) do
-    struct!(__MODULE__, Keyword.take(opts, [:should_exist?]))
-  end
+  def validators, do: [
+    should_exist?: &ExConfig.Type.validator_boolean/1,
+  ]
 
   @impl true
   def handle(data, opts) do
@@ -15,33 +17,32 @@ defmodule ExConfig.Type.ModuleName do
       do: {:ok, name}
   end
 
+  @doc false
+  @spec error(atom, any) :: {:error, String.t}
+  def error(:bad_data, name), do: {:error, "Cannot convert #{inspect(name)} to module name"}
+  def error(:not_available, name), do: {:error, "Module #{name} is not available"}
 
-  defp maybe_convert(name) when is_atom(name),
-    do: {:ok, name}
 
+  defp maybe_convert(name) when is_atom(name), do: {:ok, name}
   defp maybe_convert(name) when byte_size(name) > 0 do
+    # TODO: Add RegExp name matching/validation
     name =
       case name do
-        <<":"      , _ :: binary>> -> name # Erlang module
-        <<"Elixir.", _ :: binary>> -> name # Elixir one
+        <<":"      , name :: binary>> -> name # Erlang module
+        <<"Elixir.", _any :: binary>> -> name # Elixir one
         _ -> "Elixir.#{name}" # By default Elixir module without prefix
       end
     {:ok, String.to_atom(name)}
   end
-
-  defp maybe_convert(name) when is_list(name),
-    do: maybe_convert(to_string(name))
-
-  defp maybe_convert(name),
-    do: {:error, "Cannot convert #{inspect(name)} to module name"}
-
+  defp maybe_convert(name) when is_list(name), do: maybe_convert(to_string(name))
+  defp maybe_convert(name), do: error(:bad_data, name)
 
   defp valid?(module, %{should_exist?: true}) do
     try do
       apply(module, :module_info, [:module])
       :ok
     rescue
-      _ -> {:error, "Module #{module} is not available"}
+      _ -> error(:not_available, module)
     end
   end
   defp valid?(_module, _), do: :ok

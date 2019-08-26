@@ -23,9 +23,9 @@ to easily express configuration your application needs.
 
 # Usage
 
-Don not use this package yet, the version can show how stable the package is.
+*Please test this package a lot before using in production.*
 
-But a simple example can look like:
+A simple example can look like:
 
 ```elixir
 # lib/my_app/config.ex
@@ -55,4 +55,4 @@ defmodule MyApp do
 end
 ```
 
-Additional examples you can find in `example` directory.
+Additional examples can be found in `example` directory.

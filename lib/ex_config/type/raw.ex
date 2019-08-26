@@ -1,10 +1,9 @@
 defmodule ExConfig.Type.Raw do
-  @behaviour ExConfig.Type
+  @moduledoc """
+  """
+  use ExConfig.Type
 
   defstruct []
-
-  @impl true
-  def init(_), do: %__MODULE__{}
 
   @impl true
   def handle(data, _), do: {:ok, data}

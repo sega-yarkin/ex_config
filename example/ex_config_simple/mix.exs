@@ -21,6 +21,8 @@ defmodule ExConfigSimple.MixProject do
   defp deps() do
     [
       {:ex_config, path: "../../"},
+      {:benchee, "~> 1.0"},
+      {:exprof, "~> 0.2.0"},
     ]
   end
 end

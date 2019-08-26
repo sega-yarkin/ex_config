@@ -4,14 +4,18 @@ defmodule ExConfig.MixProject do
   def project do
     [
       app: :ex_config,
-      version: "0.0.2",
-      elixir: "~> 1.8", # TODO: Test for minimal required version.
+      version: "0.0.3",
+      elixir: "~> 1.7",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       description: description(),
       package: package(),
       name: "ExConfig",
       source_url: "https://github.com/sega-yarkin/ex_config",
+      dialyzer: [
+        plt_add_apps: [:erts, :kernel, :stdlib],
+        ignore_warnings: ".dialyzer.ignore",
+      ],
     ]
   end
 

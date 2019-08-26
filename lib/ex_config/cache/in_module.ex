@@ -1,11 +1,21 @@
 defmodule ExConfig.Cache.InModule do
+  @moduledoc """
+  """
+  @behaviour ExConfig.Cache
   alias ExConfig.Mod
 
+  @impl true
+  @spec wrap(module, keyword) :: {:ok, module}
   def wrap(source, target: target) do
     compile_module(source, target)
   end
 
+  @impl true
+  @spec get(keyword) :: module
+  def get(target: target), do: target
 
+
+  @spec compile_module(module, module) :: {:ok, module}
   defp compile_module(source, target) do
     meta = source.__meta__()
     data = source._all()
@@ -41,5 +51,4 @@ defmodule ExConfig.Cache.InModule do
         Module.create(target, content, Macro.Env.location(__ENV__))
     {:ok, module}
   end
-
 end

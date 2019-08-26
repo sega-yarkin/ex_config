@@ -5,26 +5,32 @@ defmodule ExConfig.Mod do
 
   defstruct otp_app: nil,
             path: [],
-            options: []
+            options: [],
+            on_error: :throw
 
   @type t() :: %__MODULE__{
-    otp_app: atom(),
-    path:    [atom()],
-    options: keyword(),
+    otp_app:  atom(),
+    path:     [atom()],
+    options:  keyword(),
+    on_error: on_error(),
   }
 
+  @type on_error() :: :default | :tuple | :throw
   @type mod_opts() :: [only_not_nil: boolean()]
 
   @type mod_params() :: [otp_app: atom(),
                          path: list(atom()),
-                         options: mod_opts()]
+                         options: mod_opts(),
+                         on_error: on_error()]
 
   @self __MODULE__
+  @test_env? function_exported?(Mix, :env, 0) and apply(Mix, :env, []) == :test
 
   @spec __using__(mod_params | %Mod{}) :: Macro.t
   defmacro __using__(opts) do
     data = opts_to_mod(opts)
     mod = __CALLER__.module
+    Module.register_attribute(mod, :data, persist: @test_env?)
     Module.put_attribute(mod, :data, data)
     Module.register_attribute(mod, :parameters, accumulate: true)
     Module.register_attribute(mod, :keywords, accumulate: true)
@@ -127,7 +133,7 @@ defmodule ExConfig.Mod do
   @spec opts_to_mod(%Mod{} | keyword) :: %Mod{}
   defp opts_to_mod(%Mod{} = mod), do: mod
   defp opts_to_mod(opts) do
-    struct(Mod, Keyword.take(opts, [:otp_app, :path, :options]))
+    struct(Mod, Keyword.take(opts, [:otp_app, :path, :options, :on_error]))
   end
 
   @spec prepare_opts(%Mod{}, keyword) :: keyword
@@ -210,6 +216,7 @@ defmodule ExConfig.Mod do
         |> maybe_filter_nil(opts[:only_not_nil])
       end
 
+      @compile {:inline, maybe_filter_nil: 2}
       defp maybe_filter_nil(res, true),
         do: Enum.reject(res, fn {_, v} -> is_nil(v) end)
       defp maybe_filter_nil(res, _), do: res
