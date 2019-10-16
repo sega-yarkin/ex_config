@@ -1,5 +1,8 @@
 # ExConfig
 
+[![Hex.pm](https://img.shields.io/hexpm/v/ex_config.svg)](https://hex.pm/packages/ex_config)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+
 Yet another Elixir app configuration package for fun and profit.
 
 

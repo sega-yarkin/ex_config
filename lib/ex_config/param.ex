@@ -84,17 +84,15 @@ defmodule ExConfig.Param do
   @spec maybe_invoke_source(%Param{}) :: %Param{}
   def maybe_invoke_source(%Param{data: {module, options}} = param)
         when is_atom(module) and is_list(options) do
-    try do
-      source = struct!(module, options)
-      case module.handle(source, param) do
-        {:ok, nil}       -> %Param{param | data: nil, exist?: false}
-        {:ok, data}      -> %Param{param | data: data, exist?: true}
-        data = %Param{}  -> data
-        {:error, reason} -> %Param{param | error: reason}
-      end
-    rescue
-      UndefinedFunctionError -> param
+    source = struct!(module, options)
+    case module.handle(source, param) do
+      {:ok, nil}       -> %Param{param | data: nil, exist?: false}
+      {:ok, data}      -> %Param{param | data: data, exist?: true}
+      data = %Param{}  -> data
+      {:error, reason} -> %Param{param | error: reason}
     end
+  rescue
+    UndefinedFunctionError -> param
   end
   def maybe_invoke_source(param), do: param
 

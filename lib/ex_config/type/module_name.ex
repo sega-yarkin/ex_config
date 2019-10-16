@@ -38,12 +38,10 @@ defmodule ExConfig.Type.ModuleName do
   defp maybe_convert(name), do: error(:bad_data, name)
 
   defp valid?(module, %{should_exist?: true}) do
-    try do
-      apply(module, :module_info, [:module])
-      :ok
-    rescue
-      _ -> error(:not_available, module)
-    end
+    apply(module, :module_info, [:module])
+    :ok
+  rescue
+    _ -> error(:not_available, module)
   end
   defp valid?(_module, _), do: :ok
 end

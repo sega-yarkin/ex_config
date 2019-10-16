@@ -23,7 +23,7 @@ defmodule ExConfig.Type.Enum do
   def error(:wrong_value, {data, values}), do: {:error, "Wrong enum value '#{inspect(data)}', only accept #{inspect(values)}"}
 
   @spec validate_values(any) :: ExConfig.Type.validator_result(list(atom))
-  defp validate_values(values = [_|_]) do
+  defp validate_values([_|_] = values) do
     if Enum.all?(values, &is_atom/1), do: {:ok, values}, else: :error
   end
   defp validate_values(_), do: :error

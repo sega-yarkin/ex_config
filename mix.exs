@@ -24,7 +24,8 @@ defmodule ExConfig.MixProject do
 
   defp deps() do
     [
-      {:dialyxir, "~> 1.0.0-rc.6", only: [:dev], runtime: false},
+      {:dialyxir, "~> 1.0.0-rc.6", only: [:dev, :test], runtime: false},
+      {:credo, "~> 1.1.0", only: [:dev, :test], runtime: false},
     ]
   end
 
@@ -39,5 +40,4 @@ defmodule ExConfig.MixProject do
       files: ~w(mix.exs README.md LICENSE lib),
     ]
   end
-
 end
