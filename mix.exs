@@ -1,12 +1,11 @@
 defmodule ExConfig.MixProject do
   use Mix.Project
 
-  def project do
+  def project() do
     [
       app: :ex_config,
-      version: "0.0.3",
+      version: "0.1.0",
       elixir: "~> 1.7",
-      start_permanent: Mix.env() == :prod,
       deps: deps(),
       description: description(),
       package: package(),

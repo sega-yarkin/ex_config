@@ -29,33 +29,35 @@ defmodule ExConfig.Mod do
   @spec __using__(mod_params | %Mod{}) :: Macro.t
   defmacro __using__(opts) do
     data = opts_to_mod(opts)
-    mod = __CALLER__.module
-    Module.register_attribute(mod, :data, persist: @test_env?)
-    Module.put_attribute(mod, :data, data)
-    Module.register_attribute(mod, :parameters, accumulate: true)
-    Module.register_attribute(mod, :keywords, accumulate: true)
-    Module.register_attribute(mod, :resources, accumulate: true)
+    Module.put_attribute(__CALLER__.module, :data, data)
     quote do
       import unquote(@self)
       @before_compile unquote(@self)
       @behaviour ExConfig.Resource
+
+      Module.register_attribute(__MODULE__, :data, persist: unquote(@test_env?))
+      @data unquote(Macro.escape(data))
+      Module.register_attribute(__MODULE__, :parameters, accumulate: true)
+      Module.register_attribute(__MODULE__, :keywords, accumulate: true)
+      Module.register_attribute(__MODULE__, :resources, accumulate: true)
     end
   end
 
   @spec env(atom, module, keyword) :: Macro.t
   defmacro env(name, type \\ Type.Raw, opts \\ []) do
-    mod   = Module.get_attribute(__CALLER__.module, :data)
-    opts  = prepare_opts(mod, opts)
-    param = Param.init(mod, name, Macro.expand(type, __CALLER__), opts)
     quote do
-      @parameters {unquote(name), unquote(Macro.escape(param))}
+      @param unquote(@self).__env__(@data, unquote(name), unquote(type), unquote(opts))
+      @parameters {unquote(name), @param}
       def unquote(name)(), do: unquote(name)(@data)
-      defp unquote(name)(%Mod{} = mod) do
-        unquote(Macro.escape(param))
-        |> Map.put(:mod, mod)
-        |> get_env()
+      def unquote(name)(%Mod{} = mod) do
+        get_env(%{@param | mod: mod})
       end
     end
+  end
+
+  def __env__(mod, name, type, opts) do
+    opts  = Keyword.merge(mod.options, opts)
+    Param.init(mod, name, type, opts)
   end
 
   @spec dyn(atom, keyword) :: Macro.t
@@ -116,7 +118,6 @@ defmodule ExConfig.Mod do
     ]
   end
 
-
   @spec get_env(%Param{}) :: any | {:error, String.t}
   def get_env(%Param{} = param) do
     param
@@ -134,14 +135,6 @@ defmodule ExConfig.Mod do
   defp opts_to_mod(%Mod{} = mod), do: mod
   defp opts_to_mod(opts) do
     struct(Mod, Keyword.take(opts, [:otp_app, :path, :options, :on_error]))
-  end
-
-  @spec prepare_opts(%Mod{}, keyword) :: keyword
-  defp prepare_opts(mod, opts) do
-    opts = for {name, val} <- opts,
-               {val, _} = Code.eval_quoted(val),
-            do: {name, val}
-    Keyword.merge(mod.options, opts)
   end
 
 

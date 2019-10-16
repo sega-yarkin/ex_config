@@ -21,9 +21,16 @@ to easily express configuration your application needs.
 
 ## Installation
 
-# Usage
+The package can be installed by adding `ex_config` to your list of dependencies
+in `mix.exs`:
 
-*Please test this package a lot before using in production.*
+```elixir
+def deps do
+  [{:ex_config, "~> 0.1.0"}]
+end
+```
+
+# Usage
 
 A simple example can look like:
 

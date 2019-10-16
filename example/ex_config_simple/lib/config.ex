@@ -6,6 +6,8 @@ defmodule ExConfigSimple.Config do
   alias ExConfig.Type.{Boolean, Integer, String, Enum}
   alias ExConfig.Resource.EctoPostgres
 
+  @main_colors [:red, :green, :blue]
+
   # We can define any functions.
   defp rand(), do: :crypto.strong_rand_bytes(4) |> Base.encode16(case: :lower)
 
@@ -14,14 +16,17 @@ defmodule ExConfigSimple.Config do
   env :auth_enabled, Boolean, default: false
   env :request_timeout, Integer, default: 10_000
   env :server_id, String, required: true
-  env :main_color, Enum, values: [:red, :green, :blue]
+  env :main_color, Enum, values: @main_colors
   # Defining "dynamic" parameter, equals to just defining a function,
   # but this way will add parameter into `_all` function results.
   dyn :session_prefix, do: "#{server_id()}_#{rand()}_"
 
   # Defining nested module to group related parameters together.
   keyword :storage do
-    env :type, Enum, values: [:local, :nfs, :s3], default: :local
+    @supported_fs_types ~w(local nfs s3)a
+    def supported_fs_types, do: @supported_fs_types
+
+    env :type, Enum, values: @supported_fs_types, default: :local
     env :path, String, default: "/tmp"
     env :permissions, Integer, base: 8, default: 0o644
 
