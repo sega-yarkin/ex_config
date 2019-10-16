@@ -24,7 +24,7 @@ defmodule ExConfig.Util.NumRange do
   def validate(_), do: :error
 
 
-  @spec in_range?(number, t) :: bool
+  @spec in_range?(number, t) :: boolean
   def in_range?(value, {:gt, num}), do: value > num
   def in_range?(value, {:ge, num}), do: value >= num
   def in_range?(value, {:lt, num}), do: value < num
