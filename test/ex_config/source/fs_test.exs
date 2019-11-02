@@ -107,10 +107,14 @@ defmodule ExConfig.Source.FSTest do
 
       assert invoke.(path: "/somenonexistingpath") == %Param{data: nil, exist?: false}
       assert invoke.(path: ["/somenonexistingpath", "/anotherone"]) == %Param{data: nil, exist?: false}
-      assert invoke.(path: lib_dir) == %Param{data: lib_files, exist?: true}
+      res = invoke.(path: lib_dir)
+      assert res.exist?
+      assert Enum.sort(res.data) == Enum.sort(lib_files)
 
-      assert invoke.(path: lib_dir, default: :default) == %Param{data: lib_files, exist?: true}
       assert invoke.(path: "/somenonexistingpath", default: :default) == %Param{data: :default, exist?: true}
+      res = invoke.(path: lib_dir, default: :default)
+      assert res.exist?
+      assert Enum.sort(res.data) == Enum.sort(lib_files)
     end
   end
 
