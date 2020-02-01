@@ -10,6 +10,8 @@
         {Credo.Check.Design.TagTODO, false},
         {Credo.Check.Readability.RedundantBlankLines, max_blank_lines: 2},
         {Credo.Check.Readability.ParenthesesOnZeroArityDefs, false},
+        {Credo.Check.Refactor.MapInto, false},
+        {Credo.Check.Warning.LazyLogging, false},
       ]
     }
   ]

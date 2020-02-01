@@ -7,6 +7,8 @@ defmodule ExConfig.Type.Integer do
   alias ExConfig.Type.Number
   alias ExConfig.Util.NumRange
 
+  @type result() :: integer()
+
   defstruct base: 10,
             range: nil
   @type t() :: %__MODULE__{
@@ -29,7 +31,7 @@ defmodule ExConfig.Type.Integer do
   end
 
   @doc false
-  @spec error(atom, any) :: {:error, String.t}
+  @spec error(:bad_data, any) :: {:error, String.t}
   def error(:bad_data, data), do: {:error, "Cannot parse '#{inspect(data)}' as an integer"}
 
   @spec validate_base(any) :: ExConfig.Type.validator_result(2..36)

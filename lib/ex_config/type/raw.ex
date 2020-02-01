@@ -2,6 +2,7 @@ defmodule ExConfig.Type.Raw do
   @moduledoc """
   """
   use ExConfig.Type
+  @type result() :: any()
 
   defstruct []
 

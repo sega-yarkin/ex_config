@@ -11,7 +11,9 @@ jobs:
           otp: '21.x'
         - elixir: '1.8.2'
           otp: '21.x'
-        - elixir: '1.9.2'
+        - elixir: '1.9.4'
+          otp: '22.x'
+        - elixir: '1.10.0'
           otp: '22.x'
     runs-on: ubuntu-18.04
 

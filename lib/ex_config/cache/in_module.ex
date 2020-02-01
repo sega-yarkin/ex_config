@@ -5,13 +5,11 @@ defmodule ExConfig.Cache.InModule do
   alias ExConfig.Mod
 
   @impl true
-  @spec wrap(module, keyword) :: {:ok, module}
-  def wrap(source, target: target) do
-    compile_module(source, target)
-  end
+  @spec wrap(module, Keyword.t) :: {:ok, module}
+  def wrap(source, target: target), do: compile_module(source, target)
 
   @impl true
-  @spec get(keyword) :: module
+  @spec get(Keyword.t) :: module
   def get(target: target), do: target
 
 
@@ -21,25 +19,31 @@ defmodule ExConfig.Cache.InModule do
     data = source._all()
 
     parameters =
-      for {name, _} <- meta[:parameters] do
+      meta
+      |> Keyword.fetch!(:parameters)
+      |> Enum.map(fn {name, _} ->
         quote do
           def unquote(name)(), do: unquote(Macro.escape(data[name]))
         end
-      end
+      end)
 
-    for {name, mod} <- meta[:keywords] do
+    meta
+    |> Keyword.fetch!(:keywords)
+    |> Enum.each(fn {name, mod} ->
       mod_target = Mod.child_mod_name(target, name)
       {:ok, _} = compile_module(mod, mod_target)
-    end
+    end)
 
     resources =
-      for {_name, %{one: one, all: all}} <- meta[:resources] do
+      meta
+      |> Keyword.fetch!(:resources)
+      |> Enum.map(fn {_name, %{one: one, all: all}} ->
         instances = apply(source, all, [])
         quote do
           def unquote(all)(), do: unquote(Macro.escape(instances))
           def unquote(one)(name), do: unquote(all)()[name]
         end
-      end
+      end)
 
     all =
       quote do

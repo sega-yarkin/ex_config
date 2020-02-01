@@ -11,7 +11,7 @@ defmodule ExConfig.Mod do
   @type t() :: %__MODULE__{
     otp_app:  atom(),
     path:     [atom()],
-    options:  keyword(),
+    options:  Keyword.t(),
     on_error: on_error(),
   }
 
@@ -26,10 +26,10 @@ defmodule ExConfig.Mod do
   @self __MODULE__
   @test_env? function_exported?(Mix, :env, 0) and apply(Mix, :env, []) == :test
 
-  @spec __using__(mod_params | %Mod{}) :: Macro.t
+  @spec __using__(mod_params | Mod.t) :: Macro.t
   defmacro __using__(opts) do
     data = opts_to_mod(opts)
-    Module.put_attribute(__CALLER__.module, :data, data)
+    Module.put_attribute(Map.fetch!(__CALLER__, :module), :data, data)
     quote do
       import unquote(@self)
       @before_compile unquote(@self)
@@ -40,27 +40,40 @@ defmodule ExConfig.Mod do
       Module.register_attribute(__MODULE__, :parameters, accumulate: true)
       Module.register_attribute(__MODULE__, :keywords, accumulate: true)
       Module.register_attribute(__MODULE__, :resources, accumulate: true)
-    end
-  end
 
-  @spec env(atom, module, keyword) :: Macro.t
-  defmacro env(name, type \\ Type.Raw, opts \\ []) do
-    quote do
-      @param unquote(@self).__env__(@data, unquote(name), unquote(type), unquote(opts))
-      @parameters {unquote(name), @param}
-      def unquote(name)(), do: unquote(name)(@data)
-      def unquote(name)(%Mod{} = mod) do
-        get_env(%{@param | mod: mod})
+      @compile {:inline, __mod_data__: 0}
+      defp __mod_data__(), do: unquote(Macro.escape(data))
+
+      defp __resource_mod__(name, options) do
+        mod = %{path: path} = __mod_data__()
+        %{mod | path: path ++ [name], options: options}
       end
     end
   end
 
-  def __env__(mod, name, type, opts) do
-    opts  = Keyword.merge(mod.options, opts)
-    Param.init(mod, name, type, opts)
+  @spec env(atom, module, Keyword.t) :: Macro.t
+  defmacro env(name, type \\ Type.Raw, opts \\ []) do
+    quote do
+      @param unquote(@self).__env__(@data, unquote(name), unquote(type), unquote(opts))
+      @parameters {unquote(name), @param}
+      @spec unquote(name)() :: unquote(type).result()
+                             | {:ok, unquote(type).result()}
+                             | {:error, String.t}
+                             | no_return
+      def unquote(name)(), do: unquote(name)(__mod_data__())
+      def unquote(name)(%Mod{} = mod) do
+        get_env(%{__parameter__(unquote(name)) | mod: mod})
+      end
+    end
   end
 
-  @spec dyn(atom, keyword) :: Macro.t
+  @spec __env__(Mod.t, atom, module, keyword) :: Param.t
+  def __env__(%Mod{options: mod_opts}, name, type, opts) do
+    opts = Keyword.merge(mod_opts, opts)
+    Param.init(nil, name, type, opts)
+  end
+
+  @spec dyn(atom, Keyword.t) :: Macro.t
   defmacro dyn(name, do: block) do
     quote do
       @parameters {unquote(name), nil}
@@ -69,9 +82,9 @@ defmodule ExConfig.Mod do
     end
   end
 
-  @spec keyword(atom, keyword) :: Macro.t
+  @spec keyword(atom, Keyword.t) :: Macro.t
   defmacro keyword(name, do: block) do
-    {mod_name, opts} = child_mod(__CALLER__.module, name)
+    {mod_name, opts} = child_mod(Map.fetch!(__CALLER__, :module), name)
     quote do
       @keywords {unquote(name), unquote(mod_name)}
       defmodule unquote(mod_name) do
@@ -81,9 +94,9 @@ defmodule ExConfig.Mod do
     end
   end
 
-  @spec resource(atom, atom, keyword) :: Macro.t
+  @spec resource(atom, atom, Keyword.t) :: Macro.t
   defmacro resource(name, list, do: block) do
-    {mod_name, opts} = child_mod(__CALLER__.module, name)
+    {mod_name, opts} = child_mod(Map.fetch!(__CALLER__, :module), name)
     [
       quote do
         defmodule unquote(mod_name) do
@@ -101,56 +114,49 @@ defmodule ExConfig.Mod do
   end
 
 
-  @spec __before_compile__(keyword) :: Macro.t
+  @spec __before_compile__(Keyword.t) :: Macro.t
   defmacro __before_compile__(_env) do
+    module = Map.fetch!(__CALLER__, :module)
+    parameters = get_all_parameters_quote(module)
     [
-      get_all_quote(__CALLER__.module),
+      get_parameters_data_quote(module),
+      get_all_quote(module),
 
       quote do
         def __meta__() do
           [
-            parameters: @parameters,
+            parameters: unquote(parameters),
             keywords:   @keywords,
             resources:  @resources,
           ]
         end
       end
-    ]
+    ] |> List.flatten()
   end
 
-  @spec get_env(%Param{}) :: any | {:error, String.t}
-  def get_env(%Param{} = param) do
-    param
-    |> Param.read_app_env()
-    |> Param.get_nested()
-    |> Param.maybe_invoke_source()
-    |> Param.convert_data()
-    |> Param.check_requirement()
-    |> Param.maybe_handle_error()
-    |> Param.maybe_transform()
-    |> Param.get_result()
-  end
+  @spec get_env(Param.t) :: any | {:error, String.t} | {:ok, any} | no_return
+  def get_env(%Param{} = param), do: Param.read(param)
 
-  @spec opts_to_mod(%Mod{} | keyword) :: %Mod{}
+  @spec opts_to_mod(Mod.t | Keyword.t) :: Mod.t
   defp opts_to_mod(%Mod{} = mod), do: mod
-  defp opts_to_mod(opts) do
+  defp opts_to_mod(opts) when is_list(opts) do
     struct(Mod, Keyword.take(opts, [:otp_app, :path, :options, :on_error]))
   end
 
 
   @spec capitalize_atom(atom) :: atom
-  def capitalize_atom(value),
-    do: value |> to_string() |> String.capitalize() |> String.to_atom()
+  def capitalize_atom(value) when is_atom(value),
+    do: value |> Atom.to_string() |> String.capitalize() |> String.to_atom()
 
   @spec child_mod_name(module, atom) :: module
   def child_mod_name(parent, name),
     do: Module.concat(parent, capitalize_atom(name))
 
-  @spec extend_path(%Mod{}, atom) :: %Mod{}
+  @spec extend_path(Mod.t, atom) :: Mod.t
   defp extend_path(%Mod{path: path} = val, name),
-    do: %Mod{val | path: path ++ [name]}
+    do: %{val | path: path ++ [name]}
 
-  @spec child_mod(module, atom) :: {module, %Mod{}}
+  @spec child_mod(module, atom) :: {module, Mod.t}
   defp child_mod(parent, name) do
     mod_name = child_mod_name(parent, name)
     opts =
@@ -161,58 +167,86 @@ defmodule ExConfig.Mod do
   end
 
 
-  @spec get_resource_funs_quote(module, atom, atom, keyword) :: Macro.t
+  defp get_parameters_data_quote(module) do
+    parameters =
+      module
+      |> Module.get_attribute(:parameters)
+      |> Enum.filter(fn {_, param} -> param != nil end)
+
+    [
+      quote do
+        @compile {:inline, __parameter__: 1}
+        @dialyzer {:nowarn_function, __parameter__: 1}
+      end,
+      Enum.map(parameters, fn {name, param} ->
+        quote do
+          defp __parameter__(unquote(name)), do: unquote(Macro.escape(param))
+        end
+      end),
+      quote do
+        defp __parameter__(_), do: nil
+      end
+    ]
+  end
+
+  defp get_all_parameters_quote(module) do
+    module
+    |> Module.get_attribute(:parameters)
+    |> Enum.map(fn {name, _} ->
+      quote [], do: {unquote(name), __parameter__(unquote(name))}
+    end)
+  end
+
+  @spec get_resource_funs_quote(module, atom, atom, Keyword.t) :: Macro.t
   defp get_resource_funs_quote(mod_name, name, list, opts \\ []) do
-    one = String.to_atom("get_#{name}")
-    all = String.to_atom("get_#{list}")
+    one = List.to_atom('get_' ++ Atom.to_charlist(name))
+    all = List.to_atom('get_' ++ Atom.to_charlist(list))
     quote do
       @resources {unquote(name), %{one: unquote(one), all: unquote(all)}}
 
       def unquote(one)(name) do
-        mod =
-          @data
-          |> Map.update!(:path, &(&1 ++ [name]))
-          |> Map.put(:options, unquote(Macro.escape(opts)))
-
+        mod = __resource_mod__(name, unquote(Macro.escape(opts)))
         apply(unquote(mod_name), :_all, [mod])
       end
 
       def unquote(all)() do
-        for name <- unquote(list)(), do: {name, unquote(one)(name)}
+        Enum.map(unquote(list)(), &{&1, unquote(one)(&1)})
       end
     end
   end
 
   @spec get_all_quote(module) :: Macro.t
   defp get_all_quote(module) do
-    mod_attr = &(Module.get_attribute(module, &1))
+    mod_attr = &Module.get_attribute(module, &1)
 
     parameters =
-      for {name, _} <- mod_attr.(:parameters) do
+      Enum.map(mod_attr.(:parameters), fn {name, _} ->
         quote [], do: {unquote(name), unquote(name)(mod)}
-      end
+      end)
 
     keywords =
-      for {name, mod} <- mod_attr.(:keywords) do
+      Enum.map(mod_attr.(:keywords), fn {name, mod} ->
         quote [], do: {unquote(name), unquote(mod)._all()}
-      end
+      end)
 
     all = Keyword.merge(parameters, keywords) |> Enum.sort()
     own_options = Map.get(mod_attr.(:data), :options, [])
 
     quote do
-      def _all(), do: _all(@data)
-      def _all(%Mod{} = mod) do
-        opts = Keyword.merge(unquote(own_options), mod.options)
-        mod = %Mod{mod | options: opts}
-        unquote(all)
-        |> maybe_filter_nil(opts[:only_not_nil])
+      def _all(), do: _all(__mod_data__())
+      def _all(%Mod{options: options} = mod) do
+        options = Keyword.merge(unquote(own_options), options)
+        mod = %{mod | options: options}
+        res = unquote(all)
+        if Keyword.get(options, :only_not_nil, false),
+          do: __filter_nil__(res),
+          else: res
       end
 
-      @compile {:inline, maybe_filter_nil: 2}
-      defp maybe_filter_nil(res, true),
-        do: Enum.reject(res, fn {_, v} -> is_nil(v) end)
-      defp maybe_filter_nil(res, _), do: res
+      @compile {:inline, __filter_nil__: 1}
+      defp __filter_nil__(res) do
+        Enum.reject(res, fn {_, v} -> is_nil(v) end)
+      end
     end
   end
 

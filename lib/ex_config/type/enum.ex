@@ -2,6 +2,7 @@ defmodule ExConfig.Type.Enum do
   @moduledoc """
   """
   use ExConfig.Type
+  @type result() :: atom()
 
   @enforce_keys [:values]
   defstruct [:values]
@@ -18,7 +19,7 @@ defmodule ExConfig.Type.Enum do
   def handle(data, opts), do: do_handle(data, opts)
 
   @doc false
-  @spec error(atom, any) :: {:error, String.t}
+  @spec error(:bad_data | :wrong_value, any) :: {:error, String.t}
   def error(:bad_data, data), do: {:error, "Cannot handle '#{inspect(data)}' as an enum value"}
   def error(:wrong_value, {data, values}), do: {:error, "Wrong enum value '#{inspect(data)}', only accept #{inspect(values)}"}
 

@@ -1,7 +1,7 @@
 defmodule ExConfig.Type do
   @callback __struct__(any) :: any
-  @callback validators() :: keyword(validator(any))
-  @callback init(options :: keyword) :: struct
+  @callback validators() :: Keyword.t(validator(any))
+  @callback init(options :: Keyword.t) :: struct
   @callback handle(data :: any, opts :: struct) :: {:ok, any} | {:error, String.t}
 
   defmacro __using__(_opts) do
@@ -25,8 +25,8 @@ defmodule ExConfig.Type do
   @type validator_result(t) :: {:ok, t} | :skip | :error
   @type validator(t) :: (any() -> validator_result(t))
 
-  @spec validate_options(keyword(validator(any)), keyword(any))
-          :: keyword(any) | {:error, {name :: atom, value :: any}}
+  @spec validate_options(Keyword.t(validator(any)), Keyword.t(any))
+        :: Keyword.t(any) | {:error, {name :: atom, value :: any}}
   def validate_options(validators, options) do
     Enum.reduce_while(
       validators,
@@ -41,8 +41,8 @@ defmodule ExConfig.Type do
     )
   end
 
-  @spec validate_options!(keyword(validator(any)), keyword(any), module)
-          :: keyword(any)
+  @spec validate_options!(Keyword.t(validator(any)), Keyword.t(any), module)
+        :: Keyword.t(any)
   def validate_options!(validators, options, type) do
     with {:error, {name, value}} <- validate_options(validators, options) do
       raise Err, type: type, name: name, value: value

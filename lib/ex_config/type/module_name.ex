@@ -2,6 +2,7 @@ defmodule ExConfig.Type.ModuleName do
   @moduledoc """
   """
   use ExConfig.Type
+  @type result() :: atom()
 
   defstruct should_exist?: true
 
@@ -18,7 +19,7 @@ defmodule ExConfig.Type.ModuleName do
   end
 
   @doc false
-  @spec error(atom, any) :: {:error, String.t}
+  @spec error(:bad_data | :not_available, any) :: {:error, String.t}
   def error(:bad_data, name), do: {:error, "Cannot convert #{inspect(name)} to module name"}
   def error(:not_available, name), do: {:error, "Module #{name} is not available"}
 

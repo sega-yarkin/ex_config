@@ -8,6 +8,11 @@ defmodule ExConfigSimple.MixProject do
       elixir: "~> 1.8",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
+      dialyzer: [
+        plt_add_apps: [:erts, :kernel, :stdlib],
+        ignore_warnings: ".dialyzer.ignore",
+        flags: ["-Wunderspecs", "-Werror_handling"],
+      ],
     ]
   end
 
@@ -21,8 +26,8 @@ defmodule ExConfigSimple.MixProject do
   defp deps() do
     [
       {:ex_config, path: "../../"},
+      {:dialyxir, "~> 1.0.0-rc.7", runtime: false},
       {:benchee, "~> 1.0"},
-      {:exprof, "~> 0.2.0"},
     ]
   end
 end

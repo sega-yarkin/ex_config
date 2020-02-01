@@ -14,6 +14,7 @@ defmodule ExConfig.MixProject do
       dialyzer: [
         plt_add_apps: [:erts, :kernel, :stdlib],
         ignore_warnings: ".dialyzer.ignore",
+        flags: ["-Werror_handling", "-Wunderspecs", "-Wunmatched_returns", "-Wunknown"],
       ],
     ]
   end
@@ -24,8 +25,8 @@ defmodule ExConfig.MixProject do
 
   defp deps() do
     [
-      {:dialyxir, "~> 1.0.0-rc.6", only: [:dev, :test], runtime: false},
-      {:credo, "~> 1.1.0", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.0.0-rc.7", only: [:dev, :test], runtime: false},
+      {:credo, "~> 1.2", only: [:dev, :test], runtime: false},
     ]
   end
 

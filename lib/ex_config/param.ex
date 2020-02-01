@@ -13,7 +13,7 @@ defmodule ExConfig.Param do
             error: nil
 
   @type t() :: %__MODULE__{
-    mod:        %Mod{},
+    mod:        Mod.t(),
     name:       atom(),
     type:       struct(),
     default:    any(),
@@ -25,10 +25,10 @@ defmodule ExConfig.Param do
     error:      any(),
   }
 
-  @type transform_fun() :: (%Param{} -> %Param{})
+  @type transform_fun() :: (Param.t() -> Param.t())
   @type transform_fun_any() :: (any() -> {:ok | :error, any()})
 
-  @spec init(%Mod{}, atom, module, keyword) :: %Param{}
+  @spec init(Mod.t | nil, atom, module, Keyword.t) :: Param.t
   def init(mod, name, type, opts) do
     %Param{
       mod:  mod,
@@ -40,34 +40,54 @@ defmodule ExConfig.Param do
     }
   end
 
-  @spec create_type_instance(module, keyword) :: struct
+  @spec create_type_instance(module, Keyword.t) :: struct
   def create_type_instance(type, opts) do
-    type.validators()
+    apply(type, :validators, [])
+    # type.validators()
     |> ExConfig.Type.validate_options!(opts, type)
     |> type.init()
   end
 
-  @spec read_app_env(%Param{}) :: %Param{}
+  @spec read(Param.t) :: any | {:error, String.t} | {:ok, any} | no_return
+  def read(%Param{} = param) do
+    param
+    |> read_app_env()
+    |> get_nested()
+    |> maybe_invoke_source()
+    |> convert_data()
+    |> check_requirement()
+    |> maybe_handle_error()
+    |> maybe_transform()
+    |> get_result()
+  end
+
+  @spec read_app_env(Param.t) :: Param.t
   def read_app_env(%Param{name: name,
-                          mod: %Mod{otp_app: otp_app,
-                                    path: path}} = param) do
-    first = if path == [], do: name, else: hd(path)
-    case :application_controller.get_env(otp_app, first) do
-      {:ok, data} -> %Param{param | data: data, exist?: true}
-      :undefined  -> %Param{param | data: nil, exist?: false}
+                          mod: %Mod{path: []}} = param) do
+    read_app_env0(param, name)
+  end
+  def read_app_env(%Param{mod: %Mod{path: [key | _]}} = param) do
+    read_app_env0(param, key)
+  end
+
+  @spec read_app_env0(Param.t, atom) :: Param.t
+  defp read_app_env0(%Param{mod: %Mod{otp_app: otp_app}} = param, key) do
+    case :application_controller.get_env(otp_app, key) do
+      {:ok, data} -> %{param | data: data, exist?: true}
+      :undefined  -> %{param | data: nil, exist?: false}
     end
   end
 
-  @spec get_nested(%Param{}) :: %Param{}
+  @spec get_nested(Param.t) :: Param.t
   def get_nested(%Param{exist?: false} = param), do: param
   def get_nested(%Param{mod: %Mod{path: []}} = param), do: param
   def get_nested(%Param{mod: %Mod{path: [_ | path]},
                         name: name,
                         data: data} = param) do
     case get_nested(data, path ++ [name]) do
-      {:ok, data}     -> %Param{param | data: data}
-      {:error, error} -> %Param{param | error: error}
-      nil             -> %Param{param | data: nil, exist?: false}
+      {:ok, data}     -> %{param | data: data}
+      {:error, error} -> %{param | error: error}
+      nil             -> %{param | data: nil, exist?: false}
     end
   end
 
@@ -81,63 +101,66 @@ defmodule ExConfig.Param do
   defp get_nested(_, _),
     do: {:error, "Unsupported enumerable"}
 
-  @spec maybe_invoke_source(%Param{}) :: %Param{}
+
+  @spec maybe_invoke_source(Param.t) :: Param.t
   def maybe_invoke_source(%Param{data: {module, options}} = param)
         when is_atom(module) and is_list(options) do
     source = struct!(module, options)
     case module.handle(source, param) do
-      {:ok, nil}       -> %Param{param | data: nil, exist?: false}
-      {:ok, data}      -> %Param{param | data: data, exist?: true}
+      {:ok, nil}       -> %{param | data: nil, exist?: false}
+      {:ok, data}      -> %{param | data: data, exist?: true}
       data = %Param{}  -> data
-      {:error, reason} -> %Param{param | error: reason}
+      {:error, reason} -> %{param | error: reason}
     end
   rescue
     UndefinedFunctionError -> param
   end
   def maybe_invoke_source(param), do: param
 
-  @spec convert_data(%Param{}) :: %Param{}
+  @spec convert_data(Param.t) :: Param.t
   def convert_data(%Param{exist?: true, error: nil,
                           data: data, type: type} = param) do
-    case apply(type.__struct__, :handle, [data, type]) do
-      {:ok, data}      -> %Param{param | data: data}
-      {:error, reason} -> %Param{param | error: reason}
+    case apply(Map.fetch!(type, :__struct__), :handle, [data, type]) do
+      {:ok, data}      -> %{param | data: data}
+      {:error, reason} -> %{param | error: reason}
     end
   end
   def convert_data(param), do: param
 
-  @spec check_requirement(%Param{}) :: %Param{}
+  @spec check_requirement(Param.t) :: Param.t
   def check_requirement(%Param{error: nil, required?: true,
-                               data: nil, default: nil} = param) do
-    %Param{param | error: "Parameter '#{param.name}' must be set"}
+                               data: nil, default: nil,
+                               name: name} = param) do
+    %{param | error: "Parameter '#{name}' must be set"}
   end
   def check_requirement(param), do: param
 
-  @spec maybe_handle_error(%Param{}) :: %Param{}
+  @spec maybe_handle_error(Param.t) :: Param.t
   def maybe_handle_error(%Param{error: nil} = param), do: param
   def maybe_handle_error(%Param{error: err} = param) do
     case on_error(param) do
       :tuple   -> param
-      :default -> %Param{param | error: nil, data: nil}
+      :default -> %{param | error: nil, data: nil}
       :throw   -> throw(err)
     end
   end
 
-  @spec maybe_transform(%Param{}) :: %Param{}
+  @spec maybe_transform(Param.t) :: Param.t
   def maybe_transform(%Param{transform: funs} = param) when funs != nil do
     funs
     |> List.wrap()
-    |> Enum.reduce(param, &transform(&2, &1))
+    |> Enum.reduce(param, &transform/2)
   end
   def maybe_transform(param), do: param
 
-  @spec transform(%Param{}, transform_fun | {module, atom}) :: %Param{}
-  defp transform(val, fun) when is_function(fun),
+  @spec transform(transform_fun | {module, atom}, Param.t) :: Param.t
+  defp transform(fun, val) when is_function(fun),
     do: apply(fun, [val])
-  defp transform(val, {m, f}) when is_atom(m) and is_atom(f),
+  defp transform({m, f}, val) when is_atom(m) and is_atom(f),
     do: apply(m, f, [val])
 
-  @spec get_result(%Param{}) :: any | {:ok, any} | {:error, String.t}
+
+  @spec get_result(Param.t) :: any | {:ok, any} | {:error, String.t}
   def get_result(%Param{error: reason}) when reason != nil,
     do: {:error, reason}
   def get_result(%Param{data: data, default: default} = param) do
@@ -147,9 +170,10 @@ defmodule ExConfig.Param do
     if on_error(param) == :tuple, do: {:ok, data}, else: data
   end
 
-  @spec until_error(%Param{} | any,
+
+  @spec until_error(Param.t | any,
                     [transform_fun] | [transform_fun_any])
-          :: %Param{} | any
+        :: Param.t | any
   def until_error(%Param{error: err} = param, _) when err != nil, do: param
   def until_error(%Param{} = param, []), do: param
   def until_error(%Param{} = param, [fun | rest]),
@@ -161,9 +185,8 @@ defmodule ExConfig.Param do
   def until_error(val, funs), do: until_error({:ok, val}, funs)
 
   @compile {:inline, on_error: 1}
-  @spec on_error(%Param{}) :: Mod.on_error
+  @spec on_error(Param.t) :: Mod.on_error
   defp on_error(%Param{mod: %Mod{on_error: on_error}}), do: on_error
-
 end
 
 defmodule ExConfig.Param.TypeOptionError do

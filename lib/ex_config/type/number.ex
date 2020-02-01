@@ -6,6 +6,8 @@ defmodule ExConfig.Type.Number do
   alias ExConfig.Param
   alias ExConfig.Util.NumRange
 
+  @type result() :: number()
+
   defstruct [:range]
   @type t() :: %__MODULE__{
     range: nil | NumRange.t(),
@@ -25,7 +27,7 @@ defmodule ExConfig.Type.Number do
   end
 
   @doc false
-  @spec error(atom, any) :: {:error, String.t}
+  @spec error(:bad_data | :out_of_range, any) :: {:error, String.t}
   def error(:bad_data, data), do: {:error, "Cannot parse '#{inspect(data)}' as a number"}
   def error(:out_of_range, {data, range}), do: {:error, "#{data} is out of range #{NumRange.to_string(range)}"}
 

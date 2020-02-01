@@ -1,7 +1,7 @@
 # ExConfig
-
-[![Hex.pm](https://img.shields.io/hexpm/v/ex_config.svg)](https://hex.pm/packages/ex_config)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/sega-yarkin/ex_config/CI?style=flat-square)
+[![Hex.pm](https://img.shields.io/hexpm/v/ex_config.svg?style=flat-square)](https://hex.pm/packages/ex_config)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
 Yet another Elixir app configuration package for fun and profit.
 
@@ -38,6 +38,14 @@ end
 A simple example can look like:
 
 ```elixir
+# config/config.exs
+use Mix.Config
+alias ExConfig.Source.System
+config :my_app,
+  port: {System, name: "PORT"},
+  addr: "127.0.0.1"
+
+
 # lib/my_app/config.ex
 defmodule MyApp.Config do
   # Inject useful macros 

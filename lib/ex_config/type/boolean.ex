@@ -7,6 +7,7 @@ defmodule ExConfig.Type.Boolean do
   * `"false"`, `"no"` -> `false`
   """
   use ExConfig.Type
+  @type result() :: boolean()
 
   defstruct []
 
@@ -14,7 +15,7 @@ defmodule ExConfig.Type.Boolean do
   def handle(data, _opts), do: do_handle(data)
 
   @doc false
-  @spec error(atom, any) :: {:error, String.t}
+  @spec error(:bad_data, any) :: {:error, String.t}
   def error(:bad_data, data), do: {:error, "Cannot parse '#{inspect(data)}' as a boolean"}
 
   defp do_handle(data) when is_boolean(data), do: {:ok, data}

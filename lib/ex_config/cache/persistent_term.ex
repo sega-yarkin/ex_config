@@ -5,7 +5,7 @@ defmodule ExConfig.Cache.PersistentTerm do
   @behaviour ExConfig.Cache
 
   @impl true
-  @spec wrap(module, keyword) :: {:ok, map}
+  @spec wrap(module, Keyword.t) :: {:ok, map}
   def wrap(module, opts \\ []) do
     cache = get_config_data(module)
     :persistent_term.put(get_pt_id(opts), cache)
@@ -13,7 +13,7 @@ defmodule ExConfig.Cache.PersistentTerm do
   end
 
   @impl true
-  @spec get(keyword) :: map
+  @spec get(Keyword.t) :: map
   def get(opts \\ []) do
     :persistent_term.get(get_pt_id(opts))
   end
@@ -26,7 +26,7 @@ defmodule ExConfig.Cache.PersistentTerm do
   end
 
 
-  @spec get_pt_id(keyword) :: any
+  @spec get_pt_id(Keyword.t) :: {module, atom}
   defp get_pt_id(opts) do
     id = Keyword.get(opts, :id, :default)
     {__MODULE__, id}
@@ -38,16 +38,22 @@ defmodule ExConfig.Cache.PersistentTerm do
     data = module._all()
 
     parameters =
-      for {name, _} <- meta[:parameters], do: {name, data[name]}
+      meta
+      |> Keyword.fetch!(:parameters)
+      |> Enum.map(fn {name, _} -> {name, data[name]} end)
 
     keywords =
-      for {name, mod} <- meta[:keywords], do: {name, get_config_data(mod)}
+      meta
+      |> Keyword.fetch!(:keywords)
+      |> Enum.map(fn {name, mod} -> {name, get_config_data(mod)} end)
 
     resources =
-      for {_name, %{one: one, all: all}} <- meta[:resources] do
+      meta
+      |> Keyword.fetch!(:resources)
+      |> Enum.map(fn {_name, %{one: one, all: all}} ->
         data = apply(module, all, [])
         [{one, data}, {all, data}]
-      end
+      end)
 
     Map.new(parameters ++ keywords ++ List.flatten(resources))
   end
