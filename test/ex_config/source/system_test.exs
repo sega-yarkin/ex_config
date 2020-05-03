@@ -58,4 +58,29 @@ defmodule ExConfig.Source.SystemTest do
     assert_raise ArgumentError, ~r/the following keys must also be given/, fn -> invoke.([]) end
   end
 
+  describe "get_all_sensitive_envs" do
+    test "when empty" do
+      assert ESS.get_all_sensitive_envs() == []
+    end
+
+    test "when exists" do
+      assert ESS.get_all_sensitive_envs([[
+        env1: {ESS, name: "ENV1", sensitive: true},
+        env2: {ESS, name: "ENV1", sensitive: false},
+        env3: {ESS, name: ["ENV31", "ENV32"], sensitive: true},
+        env4: {ESS, name: ["ENV41", "ENV42"], sensitive: false},
+        env5: {Keyword, name: "ENV5", sensitive: true},
+        env6: [
+          env61: [
+            env611: {ESS, name: "ENV611", sensitive: true},
+            env612: {Keyword, name: "ENV612"},
+          ],
+          env62: %{
+            env621: {ESS, name: "ENV621", sensitive: true},
+            env622: {ESS, name: "ENV622", sensitive: false},
+          },
+        ],
+      ]]) == ["ENV1", "ENV31", "ENV32", "ENV611", "ENV621"]
+    end
+  end
 end

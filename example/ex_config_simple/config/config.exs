@@ -30,4 +30,4 @@ config :ex_config_simple, ExConfigSimple.Repo,
   port: "5433",
   database: "example",
   username: "postgres",
-  password: {System, name: "PG_PASSWORD"}
+  password: {System, name: "PG_PASSWORD", sensitive: true}
