@@ -3,8 +3,16 @@ defmodule ExConfig.Type.String do
   """
   use ExConfig.Type
   @type result() :: String.t()
-
   defstruct []
+
+  @doc """
+  Helper to transform Elixir string value to Erlang string.
+  """
+  @spec to_charlist(ExConfig.Param.t) :: ExConfig.Param.t
+  def to_charlist(%{data: data} = param) when is_binary(data) do
+    %{param | data: String.to_charlist(data)}
+  end
+  def to_charlist(param), do: param
 
   @impl true
   def handle(data, _opts), do: do_handle(data)
