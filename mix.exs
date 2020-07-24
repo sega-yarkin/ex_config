@@ -4,7 +4,7 @@ defmodule ExConfig.MixProject do
   def project() do
     [
       app: :ex_config,
-      version: "0.1.1",
+      version: "0.1.2",
       elixir: "~> 1.8",
       deps: deps(),
       description: description(),
