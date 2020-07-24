@@ -5,7 +5,7 @@ jobs:
     name: mix test (Elixir ${{ matrix.elixir }} OTP ${{ matrix.otp }})
     strategy:
       matrix:
-        elixir: ['1.8.0', '1.8.2', '1.9.4', '1.10.3']
+        elixir: ['1.8.0', '1.8.2', '1.9.4', '1.10.4', '1.10.x']
         include:
         - elixir: '1.8.0'
           otp: '21.x'
@@ -13,13 +13,15 @@ jobs:
           otp: '21.x'
         - elixir: '1.9.4'
           otp: '22.x'
-        - elixir: '1.10.3'
+        - elixir: '1.10.4'
           otp: '22.x'
+        - elixir: '1.10.x'
+          otp: '23.x'
     runs-on: ubuntu-18.04
 
     steps:
-    - uses: actions/checkout@v1
-    - uses: actions/setup-elixir@v1.0.0
+    - uses: actions/checkout@v2
+    - uses: actions/setup-elixir@v1
       with:
         otp-version: ${{ matrix.otp }}
         elixir-version: ${{ matrix.elixir }}
@@ -33,4 +35,4 @@ jobs:
     - name: Run Credo
       run: mix credo --strict
     - name: Run Dialyzer
-      run: mix dialyzer --halt-exit-status
+      run: mix dialyzer
