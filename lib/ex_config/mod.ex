@@ -153,7 +153,7 @@ defmodule ExConfig.Mod do
     do: Module.concat(parent, capitalize_atom(name))
 
   @spec extend_path(Mod.t, atom) :: Mod.t
-  defp extend_path(%Mod{path: path} = val, name),
+  def extend_path(%Mod{path: path} = val, name),
     do: %{val | path: path ++ [name]}
 
   @spec child_mod(module, atom) :: {module, Mod.t}
@@ -225,8 +225,11 @@ defmodule ExConfig.Mod do
       end)
 
     keywords =
-      Enum.map(mod_attr.(:keywords), fn {name, mod} ->
-        quote [], do: {unquote(name), unquote(mod)._all()}
+      Enum.map(mod_attr.(:keywords), fn {name, module} ->
+        quote do
+          {unquote(name),
+           unquote(module)._all(extend_path.(unquote(name)))}
+        end
       end)
 
     all = Keyword.merge(parameters, keywords) |> Enum.sort()
@@ -237,6 +240,7 @@ defmodule ExConfig.Mod do
       def _all(%Mod{options: options} = mod) do
         options = Keyword.merge(unquote(own_options), options)
         mod = %{mod | options: options}
+        extend_path = &ExConfig.Mod.extend_path(mod, &1)
         res = unquote(all)
         if Keyword.get(options, :only_not_nil, false),
           do: __filter_nil__(res),
