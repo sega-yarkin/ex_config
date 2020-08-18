@@ -25,6 +25,14 @@ defmodule ExConfig.ModTest do
         keyword :kw1 do
           env :kw1_env1, String, default: "default"
           dyn :kw1_dyn1, do: :booo
+
+          keyword :kw11 do
+            env :kw11_env1, String, default: "go deeeeper!"
+
+            keyword :kw111 do
+              env :kw111_env1, ExConfig.Type.Integer, default: 111
+            end
+          end
         end
 
         dyn :resource1_names, do: [:a, :c, :b]
@@ -34,11 +42,20 @@ defmodule ExConfig.ModTest do
 
         dyn :resource2_keys, do: [:d, :e, :f]
         resource :resource2, :resource2_keys, use: unquote(@mod_name).Resource1
+
+        resource :resource3, use: unquote(@mod_name).Resource1
+
+        resource :resource4 do
+          env :data4, String
+          keyword :nested do
+            env :key1, String, default: "key-one"
+          end
+        end
       end
 
     {:module, @mod_name, _, _} = mod_create(content)
     on_exit(fn ->
-      for mod <- [@mod_name, @mod_name.Kw1, @mod_name.Resource1] do
+      for mod <- [@mod_name, @mod_name.Kw1, @mod_name.Resource1, @mod_name.Resource4] do
         :code.purge(mod)
         :code.delete(mod)
       end
@@ -84,34 +101,59 @@ defmodule ExConfig.ModTest do
   test "keyword" do
     assert mod_data(@mod_name.Kw1) ==
             %ExConfig.Mod{otp_app: @otp_app, path: [:kw1]}
+    assert mod_data(@mod_name.Kw1.Kw11) ==
+            %ExConfig.Mod{otp_app: @otp_app, path: [:kw1, :kw11]}
+    assert mod_data(@mod_name.Kw1.Kw11.Kw111) ==
+            %ExConfig.Mod{otp_app: @otp_app, path: [:kw1, :kw11, :kw111]}
     kws = mod_meta(:keywords)
     assert kws[:kw1] == @mod_name.Kw1
 
     assert @mod_name.Kw1.kw1_env1 == "default"
     assert @mod_name.Kw1.kw1_dyn1 == :booo
-    assert @mod_name.Kw1._all == [kw1_dyn1: :booo,
+    assert @mod_name.Kw1._all == [kw11: [
+                                    kw111: [kw111_env1: 111],
+                                    kw11_env1: "go deeeeper!",
+                                  ],
+                                  kw1_dyn1: :booo,
                                   kw1_env1: "default"]
 
     Application.put_env(@otp_app, :kw1, [kw1_env1: "not default",
-                                         kw1_dyn1: :useless])
+                                         kw1_dyn1: :useless,
+                                         kw11: [
+                                          kw111: [kw111_env1: 222],
+                                          kw11_env1: "indeed!",
+                                         ]])
     assert @mod_name.Kw1.kw1_env1 == "not default"
     assert @mod_name.Kw1.kw1_dyn1 == :booo
-    assert @mod_name.Kw1._all == [kw1_dyn1: :booo,
+    assert @mod_name.Kw1._all == [kw11: [
+                                    kw111: [kw111_env1: 222],
+                                    kw11_env1: "indeed!",
+                                  ],
+                                  kw1_dyn1: :booo,
                                   kw1_env1: "not default"]
   end
 
   test "resource" do
     assert mod_data(@mod_name.Resource1) ==
             %ExConfig.Mod{otp_app: @otp_app, path: [:resource1]}
+    assert mod_data(@mod_name.Resource4) ==
+            %ExConfig.Mod{otp_app: @otp_app, path: [:resource4]}
+    assert mod_data(@mod_name.Resource4.Nested) ==
+            %ExConfig.Mod{otp_app: @otp_app, path: [:resource4, :nested]}
     assert_raise UndefinedFunctionError, fn -> mod_data(@mod_name.Resource2) end
+    assert_raise UndefinedFunctionError, fn -> mod_data(@mod_name.Resource3) end
     resources = mod_meta(:resources)
     assert resources[:resource1] == %{all: :get_resource1_names, one: :get_resource1}
     assert resources[:resource2] == %{all: :get_resource2_keys , one: :get_resource2}
+    assert resources[:resource3] == nil
+    assert resources[:resource4] == nil
 
     assert function_exported?(@mod_name, :get_resource1_names, 0) == true
     assert function_exported?(@mod_name, :get_resource1, 1) == true
     assert function_exported?(@mod_name, :get_resource2_keys, 0) == true
     assert function_exported?(@mod_name, :get_resource2, 1) == true
+    assert function_exported?(@mod_name, :resource3, 0) == true
+    assert function_exported?(@mod_name, :resource4, 0) == true
 
     assert @mod_name.get_resource1(:a) == [data: nil]
     assert @mod_name.get_resource1(:d) == [data: nil]
@@ -119,9 +161,12 @@ defmodule ExConfig.ModTest do
     assert @mod_name.get_resource2(:d) == [data: nil]
     assert Keyword.keys(@mod_name.get_resource1_names()) == @mod_name.resource1_names()
     assert Keyword.keys(@mod_name.get_resource2_keys()) == @mod_name.resource2_keys()
+    assert @mod_name.resource3() == [data: nil]
+    assert @mod_name.resource4() == [data4: nil, nested: [key1: "key-one"]]
 
     [a: [data: "eɪ"], b: [data: "biː"], c: [data: "siː"],
      d: [data: "diː"], e: [data: "iː"], f: [data: "ɛf"],
+     resource3: [data: "three"], resource4: [data4: "four", nested: [key1: "key-1"]],
     ] |> Enum.each(fn {k, v} -> Application.put_env(@otp_app, k, v) end)
 
     assert @mod_name.get_resource1(:a) == [data: "eɪ"]
@@ -130,5 +175,7 @@ defmodule ExConfig.ModTest do
     assert @mod_name.get_resource2(:d) == [data: "diː"]
     assert @mod_name.get_resource1_names() == [a: [data: "eɪ"], c: [data: "siː"], b: [data: "biː"]]
     assert @mod_name.get_resource2_keys() == [d: [data: "diː"], e: [data: "iː"], f: [data: "ɛf"]]
+    assert @mod_name.resource3() == [data: "three"]
+    assert @mod_name.resource4() == [data4: "four", nested: [key1: "key-1"]]
   end
 end

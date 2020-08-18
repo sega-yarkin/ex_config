@@ -13,8 +13,10 @@ defmodule ExConfig.ResourceTest do
         use ExConfig.Resource, options: [opt1: :option1]
       end
 
-      {:module, @mod_name, _, _} = mod_create(content)
-      assert %ExConfig.Mod{otp_app: nil, options: [opt1: :option1]} == mod_data()
+    {:module, @mod_name, _, _} = mod_create(content)
+    assert %ExConfig.Mod{otp_app: nil, options: [opt1: :option1]} == mod_data()
+    :code.purge(@mod_name)
+    :code.delete(@mod_name)
   end
 
 end

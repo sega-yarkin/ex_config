@@ -28,7 +28,7 @@ defmodule ExConfig.Mod do
 
   @spec __using__(mod_params | Mod.t) :: Macro.t
   defmacro __using__(opts) do
-    data = opts_to_mod(opts)
+    data = opts_to_mod(opts, __CALLER__)
     Module.put_attribute(Map.fetch!(__CALLER__, :module), :data, data)
     quote do
       import unquote(@self)
@@ -95,6 +95,7 @@ defmodule ExConfig.Mod do
   end
 
   @spec resource(atom, atom, Keyword.t) :: Macro.t
+  defmacro resource(name, list \\ nil, block_or_opts)
   defmacro resource(name, list, do: block) do
     {mod_name, opts} = child_mod(Map.fetch!(__CALLER__, :module), name)
     [
@@ -137,20 +138,37 @@ defmodule ExConfig.Mod do
   @spec get_env(Param.t) :: any | {:error, String.t} | {:ok, any} | no_return
   def get_env(%Param{} = param), do: Param.read(param)
 
-  @spec opts_to_mod(Mod.t | Keyword.t) :: Mod.t
-  defp opts_to_mod(%Mod{} = mod), do: mod
-  defp opts_to_mod(opts) when is_list(opts) do
-    struct(Mod, Keyword.take(opts, [:otp_app, :path, :options, :on_error]))
+  @spec opts_to_mod(Mod.t | Keyword.t, Macro.Env.t) :: Mod.t
+  defp opts_to_mod(%Mod{} = mod, _), do: mod
+  defp opts_to_mod(opts, env) when is_list(opts) do
+    opts = expand_ast_kw([otp_app: :basic, path: :list,
+                          options: :kw, on_error: :basic],
+                         opts, env)
+    struct(Mod, opts)
   end
 
+  @spec expand_ast(atom, any, Macro.Env.t) :: any
+  defp expand_ast(:basic, value, env), do: Macro.expand(value, env)
+  defp expand_ast(:list, values, env), do: Enum.map(values, &Macro.expand(&1, env))
+  defp expand_ast(:kw, pairs, env) do
+    for {key, value} <- pairs, do: {key, Macro.expand(value, env)}
+  end
 
-  @spec capitalize_atom(atom) :: atom
-  def capitalize_atom(value) when is_atom(value),
-    do: value |> Atom.to_string() |> String.capitalize() |> String.to_atom()
+  @spec expand_ast_kw(Keyword.t, Keyword.t, Macro.Env.t) :: Keyword.t
+  defp expand_ast_kw(meta, pairs, env) do
+    for {key, type}  <- meta,
+        {:ok, value} <- [Keyword.fetch(pairs, key)] do
+      {key, expand_ast(type, value, env)}
+    end
+  end
+
+  @spec camelize_atom(atom) :: atom
+  def camelize_atom(value) when is_atom(value),
+    do: value |> Atom.to_string() |> Macro.camelize() |> String.to_atom()
 
   @spec child_mod_name(module, atom) :: module
   def child_mod_name(parent, name),
-    do: Module.concat(parent, capitalize_atom(name))
+    do: Module.concat(parent, camelize_atom(name))
 
   @spec extend_path(Mod.t, atom) :: Mod.t
   def extend_path(%Mod{path: path} = val, name),
@@ -198,7 +216,17 @@ defmodule ExConfig.Mod do
   end
 
   @spec get_resource_funs_quote(module, atom, atom, Keyword.t) :: Macro.t
-  defp get_resource_funs_quote(mod_name, name, list, opts \\ []) do
+  defp get_resource_funs_quote(mod_name, name, list, opts \\ [])
+  defp get_resource_funs_quote(mod_name, name, nil, opts) do
+    quote do
+      def unquote(name)() do
+        mod = __resource_mod__(unquote(name), unquote(Macro.escape(opts)))
+        apply(unquote(mod_name), :_all, [mod])
+      end
+    end
+  end
+
+  defp get_resource_funs_quote(mod_name, name, list, opts) do
     one = List.to_atom('get_' ++ Atom.to_charlist(name))
     all = List.to_atom('get_' ++ Atom.to_charlist(list))
     quote do

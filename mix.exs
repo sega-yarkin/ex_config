@@ -4,7 +4,7 @@ defmodule ExConfig.MixProject do
   def project() do
     [
       app: :ex_config,
-      version: "0.1.3",
+      version: "0.1.4",
       elixir: "~> 1.8",
       deps: deps(),
       description: description(),
@@ -14,7 +14,7 @@ defmodule ExConfig.MixProject do
       dialyzer: [
         plt_add_apps: [:erts, :kernel, :stdlib],
         ignore_warnings: ".dialyzer.ignore",
-        flags: ["-Werror_handling", "-Wunderspecs", "-Wunmatched_returns", "-Wunknown"],
+        flags: [:error_handling, :underspecs, :unmatched_returns, :unknown],
       ],
     ]
   end
