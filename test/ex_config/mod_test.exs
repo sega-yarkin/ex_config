@@ -1,10 +1,12 @@
 defmodule ExConfig.ModTest do
   use ExUnit.Case, async: true
+  @compile {:no_warn_undefined, ExConfig.ModTestModule}
+  @compile {:no_warn_undefined, ExConfig.ModTestModule.Kw1}
 
   @otp_app ExConfigTestApp
   @mod_name ExConfig.ModTestModule
-  defp mod_create(content),
-    do: Module.create(@mod_name, content, Macro.Env.location(__ENV__))
+  defp mod_create(content, mod \\ @mod_name),
+    do: Module.create(mod, content, Macro.Env.location(__ENV__))
 
   defp mod_data(mod \\ @mod_name), do: hd(mod.module_info(:attributes)[:data])
 
@@ -68,6 +70,20 @@ defmodule ExConfig.ModTest do
 
   test "using" do
     assert mod_data() == %ExConfig.Mod{otp_app: @otp_app}
+  end
+
+  test "using 2" do
+    mod_name = ExConfig.ModTestModuleUsing2
+    content =
+      quote do
+        alias ExConfig.Type
+        use ExConfig.Mod, otp_app: unquote(@otp_app),
+                          path: [:nested, Type.String]
+      end
+    {:module, ^mod_name, _, _} = mod_create(content, mod_name)
+    assert %ExConfig.Mod{otp_app: @otp_app, path: path} = mod_data(mod_name)
+    assert path == [:nested, ExConfig.Type.String]
+    :code.purge(mod_name)
   end
 
   test "env" do

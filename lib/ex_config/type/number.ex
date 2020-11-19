@@ -4,7 +4,7 @@ defmodule ExConfig.Type.Number do
   """
   use ExConfig.Type
   alias ExConfig.Param
-  alias ExConfig.Util.NumRange
+  alias ExConfig.Utils.NumRange
 
   @type result() :: number()
 

@@ -87,6 +87,10 @@ defmodule ExConfig.ParamTest do
     assert invoke.(%Param{@p1 | data: {TestSource2, []}}) ==
                    %Param{@p1 | data: {TestSource2, []}}
 
+    # is not keyword
+    assert invoke.(%Param{@p1 | data: {TestSource, [:opts]}}) ==
+                   %Param{@p1 | data: {TestSource, [:opts]}}
+
     # no source module
     assert invoke.(@p1) == @p1
   end

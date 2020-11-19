@@ -1,4 +1,4 @@
-defmodule ExConfig.Util.NumRange do
+defmodule ExConfig.Utils.NumRange do
   @moduledoc """
   """
 

@@ -2,18 +2,33 @@ defmodule ExConfig.Source.System do
   @behaviour ExConfig.Source
 
   @enforce_keys [:name]
-  defstruct [:name, :default, sensitive: false]
+  defstruct [:name, :default, sensitive: false, expand: false]
+
+  @type name() :: String.t()
 
   @type t() :: %__MODULE__{
-    name:      String.t() | [String.t()],
+    name:      name() | [name()],
     default:   String.t() | nil,
     sensitive: boolean(),
+    expand:    boolean(),
   }
 
   @impl true
-  def handle(%{name: name, default: default}, _) do
-    data = Enum.find_value(List.wrap(name), default, &System.get_env/1)
+  def handle(%{name: name, default: default, expand: expand}, param) do
+    find_fn = case expand do
+      true  -> &get_env_by_pattern(&1, param)
+      false -> &System.get_env/1
+    end
+
+    data = Enum.find_value(List.wrap(name), default, find_fn)
     {:ok, data}
+  end
+
+  defp get_env_by_pattern(pattern, %{name: name} = _param) do
+    name = name |> Atom.to_string() |> String.upcase()
+    pattern
+    |> String.replace("${name}", name)
+    |> System.get_env()
   end
 
   @doc """
@@ -22,35 +37,63 @@ defmodule ExConfig.Source.System do
   """
   @spec get_all_sensitive_envs() :: [String.t]
   def get_all_sensitive_envs() do
-    all_envs =
-      for {app, _, _} <- Application.loaded_applications() do
-        Application.get_all_env(app)
-      end
-
-    get_all_sensitive_envs(all_envs)
+    __MODULE__
+    |> ExConfig.Source.get_source_occurrences(&Keyword.get(&1, :sensitive))
+    |> get_all_sensitive_envs()
   end
 
   @doc false
   @spec get_all_sensitive_envs([Keyword.t]) :: [String.t]
-  def get_all_sensitive_envs(all_envs) do
-    sensitive_envs =
-      for app_envs  <- all_envs,
-          env       <- app_envs,
-          {_, opts} <- List.flatten(find_self_in_envs(env)),
-          Keyword.get(opts, :sensitive) == true
-      do
-        Keyword.get(opts, :name, [])
-      end
+  def get_all_sensitive_envs(matched_envs) do
+    {patterns, raw} =
+      matched_envs
+      |> Enum.map(fn {_, opts} -> opts end)
+      |> Enum.split_with(&Keyword.get(&1, :expand, false))
 
-    sensitive_envs
-    |> List.flatten()
-    |> Enum.sort()
-    |> Enum.uniq()
+    get_env_names = fn (opts) ->
+      opts
+      |> Keyword.get(:name, [])
+      |> List.wrap()
+      |> Enum.filter(&(is_binary(&1) and byte_size(&1) > 0))
+    end
+
+    raw = Enum.flat_map(raw, get_env_names)
+
+    by_patterns =
+      patterns
+      |> Enum.flat_map(get_env_names)
+      |> find_envs_by_patterns()
+
+    (raw ++ by_patterns) |> Enum.uniq() |> Enum.sort()
   end
 
-  defp find_self_in_envs({__MODULE__, [_|_]} = kw), do: [kw]
-  defp find_self_in_envs({_key, value}), do: find_self_in_envs(value)
-  defp find_self_in_envs([_|_] = envs ), do: Enum.map(envs, &find_self_in_envs/1)
-  defp find_self_in_envs(%{}   = envs ), do: Enum.map(envs, &find_self_in_envs/1)
-  defp find_self_in_envs(_), do: []
+  @spec find_envs_by_patterns([String.t]) :: [String.t]
+  defp find_envs_by_patterns(patterns) do
+    patterns =
+      patterns
+      |> Enum.map(&env_pattern_mask/1)
+      |> Enum.reject(&match?(:error, &1))
+
+    any_pattern? = fn env -> Enum.any?(patterns, &Regex.match?(&1, env)) end
+
+    System.get_env()
+    |> Map.keys()
+    |> Enum.filter(any_pattern?)
+  end
+
+  @spec env_pattern_mask(String.t) :: Regex.t | :error
+  defp env_pattern_mask(pattern) do
+    to_replace = Regex.escape("${name}")
+    pattern =
+      pattern
+      |> Regex.escape()
+      |> String.replace(to_replace, "([A-Z0-9_]+)", global: false)
+      |> String.replace(to_replace, "\\1")
+
+    case Regex.compile("^" <> pattern <> "$") do
+      {:ok, re}   -> re
+      {:error, _} -> :error
+    end
+  end
+
 end

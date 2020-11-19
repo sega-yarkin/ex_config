@@ -40,6 +40,9 @@ defmodule ExConfig.Resource.EctoPostgresTest do
               username: "postgres"
             ]
 
+    # Trigger 100% coverage for EctoPostgres
+    ExConfig.Resource.EctoPostgres.database()
+
     :code.purge(@mod_name)
     :code.delete(@mod_name)
   end

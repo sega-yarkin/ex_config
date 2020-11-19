@@ -104,13 +104,17 @@ defmodule ExConfig.Param do
 
   @spec maybe_invoke_source(Param.t) :: Param.t
   def maybe_invoke_source(%Param{data: {module, options}} = param)
-        when is_atom(module) and is_list(options) do
-    source = struct!(module, options)
-    case module.handle(source, param) do
-      {:ok, nil}       -> %{param | data: nil, exist?: false}
-      {:ok, data}      -> %{param | data: data, exist?: true}
-      data = %Param{}  -> data
-      {:error, reason} -> %{param | error: reason}
+                          when is_atom(module) and is_list(options) do
+    if Keyword.keyword?(options) do
+      source = struct!(module, options)
+      case module.handle(source, param) do
+        {:ok, nil}       -> %{param | data: nil, exist?: false}
+        {:ok, data}      -> %{param | data: data, exist?: true}
+        data = %Param{}  -> data
+        {:error, reason} -> %{param | error: reason}
+      end
+    else
+      param
     end
   rescue
     UndefinedFunctionError -> param

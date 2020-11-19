@@ -25,8 +25,8 @@ defmodule ExConfig.MixProject do
 
   defp deps() do
     [
-      {:dialyxir, "~> 1.0.0-rc.7", only: [:dev, :test], runtime: false},
-      {:credo, "~> 1.2", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.0.0", only: [:dev, :test], runtime: false},
+      {:credo, "~> 1.5", only: [:dev, :test], runtime: false},
     ]
   end
 

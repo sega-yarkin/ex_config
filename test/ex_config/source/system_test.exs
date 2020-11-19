@@ -39,6 +39,17 @@ defmodule ExConfig.Source.SystemTest do
       assert ESS.handle(%ESS{name: [@env_nx1, @env_nx2], default: :some}, @p) == {:ok, :some}
     end
 
+    test "with pattern" do
+      handle = &ESS.handle(%ESS{name: &1, expand: true}, %Param{name: &2})
+      assert handle.("ENV_EX_ONE", :not_used) == {:ok, @env_ex1_val}
+      assert handle.("ENV_EX_${name}", :one) == {:ok, @env_ex1_val}
+      assert handle.("ENV_${name}_ONE", :ex) == {:ok, @env_ex1_val}
+      assert handle.("ENV_EX_${name}", :some) == {:ok, nil}
+      assert handle.("${name}NV_${name}X_ON${name}", :e) == {:ok, @env_ex1_val}
+      assert handle.([@env_nx1, "${name}NV_${name}X_ON${name}"], :e) == {:ok, @env_ex1_val}
+      assert handle.([@env_nx1, @env_ex2, "${name}NV_${name}X_ON${name}"], :e) == {:ok, @env_ex2_val}
+    end
+
     test "missing or wrong name option" do
       assert_raise ArgumentError, ~r/the following keys must also be given/, fn -> struct!(ESS, default: :some) end
       assert_raise FunctionClauseError, fn -> ESS.handle(%ESS{name: :test}, @p) end
@@ -64,9 +75,12 @@ defmodule ExConfig.Source.SystemTest do
     end
 
     test "when exists" do
-      assert ESS.get_all_sensitive_envs([[
+      filter = &Keyword.get(&1, :sensitive)
+      gto = &ExConfig.Source.get_source_occurrences(ESS, filter, &1)
+
+      assert ESS.get_all_sensitive_envs(gto.([app: [
         env1: {ESS, name: "ENV1", sensitive: true},
-        env2: {ESS, name: "ENV1", sensitive: false},
+        env2: {ESS, name: "ENV2", sensitive: false},
         env3: {ESS, name: ["ENV31", "ENV32"], sensitive: true},
         env4: {ESS, name: ["ENV41", "ENV42"], sensitive: false},
         env5: {Keyword, name: "ENV5", sensitive: true},
@@ -80,7 +94,28 @@ defmodule ExConfig.Source.SystemTest do
             env622: {ESS, name: "ENV622", sensitive: false},
           },
         ],
-      ]]) == ["ENV1", "ENV31", "ENV32", "ENV611", "ENV621"]
+        env7: {ESS, name: "ENV7"},
+        env8: {ESS, sensitive: true},
+        env9: {ESS, name: "ENV1", sensitive: true},
+      ]])) == ["ENV1", "ENV31", "ENV32", "ENV611", "ENV621"]
+    end
+
+    test "with patterns" do
+      filter = &Keyword.get(&1, :sensitive)
+      gto = &ExConfig.Source.get_source_occurrences(ESS, filter, &1)
+
+      assert ESS.get_all_sensitive_envs(gto.([app: [
+        env1: {ESS, name: "ENV_EX_${name}", sensitive: true, expand: true},
+      ]])) == ["ENV_EX_ONE", "ENV_EX_TWO"]
+
+      assert ESS.get_all_sensitive_envs(gto.([app: [
+        env1: {ESS, name: "${name}NV_${name}X_ON${name}", sensitive: true, expand: true},
+      ]])) == ["ENV_EX_ONE"]
+
+      assert ESS.get_all_sensitive_envs(gto.([app: [
+        env1: {ESS, name: "${name}NV_${name}X_ON${name}", sensitive: true, expand: true},
+        env2: {ESS, name: "ENV_EX_TWO", sensitive: true, expand: true},
+      ]])) == ["ENV_EX_ONE", "ENV_EX_TWO"]
     end
   end
 end

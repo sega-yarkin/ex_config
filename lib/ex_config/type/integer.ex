@@ -5,7 +5,7 @@ defmodule ExConfig.Type.Integer do
   use ExConfig.Type
   alias ExConfig.Param
   alias ExConfig.Type.Number
-  alias ExConfig.Util.NumRange
+  alias ExConfig.Utils.NumRange
 
   @type result() :: integer()
 
