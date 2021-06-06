@@ -12,8 +12,9 @@ defmodule ExConfig.MixProject do
       name: "ExConfig",
       source_url: "https://github.com/sega-yarkin/ex_config",
       dialyzer: [
-        plt_add_apps: [:erts, :kernel, :stdlib],
-        ignore_warnings: ".dialyzer.ignore",
+        plt_file: {:no_warn, "priv/plts/dialyzer.plt"},
+        plt_apps: [:erts, :kernel, :stdlib],
+        ignore_warnings: ".dialyzer_ignore.exs",
         flags: [:error_handling, :underspecs, :unmatched_returns, :unknown],
       ],
     ]
@@ -25,8 +26,8 @@ defmodule ExConfig.MixProject do
 
   defp deps() do
     [
-      {:dialyxir, "~> 1.0.0", only: [:dev, :test], runtime: false},
-      {:credo, "~> 1.5", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.1.0", only: [:dev, :test], runtime: false},
+      {:credo, "~> 1.5.0", only: [:dev, :test], runtime: false},
     ]
   end
 
