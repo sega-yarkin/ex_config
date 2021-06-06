@@ -1,4 +1,4 @@
 [
-  {":0: Unknown function persistent_term:get/1"},
-  {":0: Unknown function persistent_term:put/2"},
+  {":0:unknown_function Function :persistent_term.get/1 does not exist."},
+  {":0:unknown_function Function :persistent_term.put/2 does not exist."},
 ]
