@@ -8,3 +8,4 @@ erl_crash.dump
 *.bak
 ex_config-*.tar
 /.elixir_ls
+/priv/plts
