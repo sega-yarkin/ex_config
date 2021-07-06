@@ -4,7 +4,7 @@ defmodule ExConfig.MixProject do
   def project() do
     [
       app: :ex_config,
-      version: "0.1.4",
+      version: "0.2.0",
       elixir: "~> 1.8",
       deps: deps(),
       description: description(),
@@ -38,7 +38,7 @@ defmodule ExConfig.MixProject do
   defp package() do
     [
       licenses: ["MIT"],
-      links: %{github: "https://github.com/sega-yarkin/ex_config"},
+      links: %{GitHub: "https://github.com/sega-yarkin/ex_config"},
       files: ~w(mix.exs README.md LICENSE lib),
     ]
   end

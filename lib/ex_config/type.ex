@@ -2,21 +2,27 @@ defmodule ExConfig.Type do
   @callback __struct__(any) :: any
   @callback validators() :: Keyword.t(validator(any))
   @callback init(options :: Keyword.t) :: struct
+  @callback default() :: any
   @callback handle(data :: any, opts :: struct) :: {:ok, any} | {:error, String.t}
+
+  @type t() :: struct()
 
   defmacro __using__(_opts) do
     quote do
       @behaviour ExConfig.Type
 
-      @impl true
-      def init(opts \\ []) do
+      @impl ExConfig.Type
+      def init(opts) when is_list(opts) do
         struct!(__MODULE__, opts)
       end
 
-      @impl true
+      @impl ExConfig.Type
       def validators, do: []
 
-      defoverridable init: 1, validators: 0
+      @impl ExConfig.Type
+      def default, do: nil
+
+      defoverridable init: 1, validators: 0, default: 0
     end
   end
 

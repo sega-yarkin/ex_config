@@ -34,7 +34,7 @@ defmodule ExConfig.Param do
       mod:  mod,
       name: name,
       type: create_type_instance(type, opts),
-      default:   Keyword.get(opts, :default, nil),
+      default:   Keyword.get(opts, :default, type.default()),
       required?: Keyword.get(opts, :required, false),
       transform: Keyword.get(opts, :transform, nil),
     }

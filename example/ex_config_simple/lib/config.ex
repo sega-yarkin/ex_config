@@ -3,7 +3,7 @@ defmodule ExConfigSimple.Config do
 
   # Add aliases to make it short.
   # NOTE: Modules have names similar to Elixir core ones.
-  alias ExConfig.Type.{Boolean, Integer, String, Enum}
+  alias ExConfig.Type.{Boolean, Integer, String, Enum, List}
   alias ExConfig.Resource.EctoPostgres
 
   @main_colors [:red, :green, :blue]
@@ -17,6 +17,7 @@ defmodule ExConfigSimple.Config do
   env :request_timeout, Integer, default: 10_000
   env :server_id, String, required: true
   env :main_color, Enum, values: @main_colors
+  env :extra_colors, List, item: {Integer, range: 0..0xffffff, base: 16}, delim: ","
   # Defining "dynamic" parameter, equals to just defining a function,
   # but this way will add parameter into `_all` function results.
   dyn :session_prefix, do: "#{server_id()}_#{rand()}_"

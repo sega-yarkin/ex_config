@@ -36,6 +36,13 @@ defmodule ExConfig.Type.BooleanTest do
       assert handle.('no') == {:ok, false}
     end
 
+    test "when valid boolean" do
+      handle = &Boolean.handle(&1, instance())
+
+      assert handle.(true) == {:ok, true}
+      assert handle.(false) == {:ok, false}
+    end
+
     test "when invalid data" do
       handle = &Boolean.handle(&1, instance())
       err = &Boolean.error(:bad_data, &1)

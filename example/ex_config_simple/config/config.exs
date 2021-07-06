@@ -6,7 +6,8 @@ config :ex_config_simple,
   auth_enabled: {System, name: "AUTH_ENABLED"},
   request_timeout: 20_000,
   server_id: {System, name: ["INSTANCE_ID", "SERVER_ID"]},
-  main_color: "red"
+  main_color: "red",
+  extra_colors: "0x264653,0x2a9d8f,0xe9c46a"
 
 config :ex_config_simple, :storage,
   type: "nfs",

@@ -97,8 +97,15 @@ defmodule ExConfig.ParamTest do
 
 
   defmodule TestType do
+    use ExConfig.Type
     defstruct []
     def handle(data, _), do: data
+    def default, do: :other_default
+  end
+
+  test "default_in_type" do
+    assert Param.init(@mod1, @p1name, TestType, [])
+        == %Param{@p1 | type: %TestType{}, default: :other_default}
   end
 
   test "convert_data" do
