@@ -29,7 +29,7 @@ in `mix.exs`:
 
 ```elixir
 def deps do
-  [{:ex_config, "~> 0.1.0"}]
+  [{:ex_config, "~> 0.2"}]
 end
 ```
 
