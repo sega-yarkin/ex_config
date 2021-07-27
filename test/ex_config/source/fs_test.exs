@@ -122,14 +122,16 @@ defmodule ExConfig.Source.FSTest do
     test "handle" do
       handle = &elem(FS.Glob.handle(%FS.Glob{expr: &1}, @p), 1)
 
-      files = handle.("_build/test/**/*.beam")
+      files = handle.("_build/{dev,test}/**/*.beam")
       assert length(files) > 10
       assert "_build/test/lib/ex_config/ebin/Elixir.ExConfig.beam" in files
+          or "_build/dev/lib/ex_config/ebin/Elixir.ExConfig.beam" in files
       refute "config/config.exs" in files
 
-      files = handle.(["_build/test/**/*.beam", "config/*.exs"])
+      files = handle.(["_build/{dev,test}/**/*.beam", "config/*.exs"])
       assert length(files) > 10
       assert "_build/test/lib/ex_config/ebin/Elixir.ExConfig.beam" in files
+          or "_build/dev/lib/ex_config/ebin/Elixir.ExConfig.beam" in files
       assert "config/config.exs" in files
     end
   end
