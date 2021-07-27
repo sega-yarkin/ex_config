@@ -24,7 +24,7 @@ defmodule ExConfig.Mod do
                          on_error: on_error()]
 
   @self __MODULE__
-  @test_env? function_exported?(Mix, :env, 0) and apply(Mix, :env, []) == :test
+  @test_env? function_exported?(Mix, :env, 0) and apply(Mix, :env, []) in [:dev, :test]
 
   @spec __using__(mod_params | Mod.t) :: Macro.t
   defmacro __using__(opts) do
