@@ -1,6 +1,10 @@
 # ExConfig
-![GitHub Workflow Status](https://img.shields.io/github/workflow/status/sega-yarkin/ex_config/CI?style=flat-square)
+
+[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/sega-yarkin/ex_config/Elixir%20Tests?style=flat-square)](https://github.com/sega-yarkin/ex_config/actions/workflows/elixir.yml)
 [![Hex.pm](https://img.shields.io/hexpm/v/ex_config.svg?style=flat-square)](https://hex.pm/packages/ex_config)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-blue.svg?style=flat-square)](https://hexdocs.pm/ex_config/)
+[![Coveralls](https://img.shields.io/coveralls/github/sega-yarkin/ex_config?style=flat-square)](https://coveralls.io/github/sega-yarkin/ex_config?branch=master)
+[![codebeat badge](https://codebeat.co/badges/da6d58c1-6461-4190-96d1-96a808c708e3)](https://codebeat.co/projects/github-com-sega-yarkin-ex_config-master)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
 Yet another Elixir app configuration package for fun and profit.
@@ -20,7 +24,8 @@ continue use `Application.get_env/2-3`).
 
 The idea behind this package is to use a regular Elixir module to store and
 get application parameters. The package provides a set of macros and helpers
-to easily express configuration your application needs.
+to easily express configuration your application needs. It also helps
+to aggregate configuration releated code/parameters into a single place.
 
 ## Installation
 
