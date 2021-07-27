@@ -18,7 +18,7 @@ defmodule ExConfig.Cache.PersistentTerm do
     :persistent_term.get(get_pt_id(opts))
   end
 
-  defmacro getm(opts \\ []) do
+  defmacro config(opts \\ []) do
     pt_id = get_pt_id(opts)
     quote do
       :persistent_term.get(unquote(pt_id))

@@ -44,14 +44,15 @@ ptcache_test = fn ->
 end
 
 ptcache_macro_test = fn ->
-  PTCache.getm.auth_enabled
-  PTCache.getm.session_prefix
-  PTCache.getm
-  PTCache.getm.storage.type
-  PTCache.getm.storage
-  PTCache.getm.get_buckets
-  PTCache.getm.get_bucket[:pub_storage]
-  PTCache.getm.get_ecto_repo[ExConfigSimple.Repo]
+  import ExConfig.Cache.PersistentTerm, only: [config: 0]
+  config.auth_enabled
+  config.session_prefix
+  config()
+  config.storage.type
+  config.storage
+  config.get_buckets
+  config.get_bucket[:pub_storage]
+  config.get_ecto_repo[ExConfigSimple.Repo]
   :ok
 end
 

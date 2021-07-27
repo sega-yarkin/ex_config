@@ -74,16 +74,16 @@ defmodule ExConfig.Cache.PersistentTermTest do
                                                b: [data: "biː"]]
 
     # Access with macro
-    assert PTCache.getm.env1 == "env1_value"
-    assert PTCache.getm.env2 == "env2_value"
-    assert PTCache.getm.dyn1 == 42
-    assert PTCache.getm.kw1.kw1_env1 == "not default"
-    assert PTCache.getm.kw1.kw1_dyn1 == :booo
-    assert PTCache.getm.get_resource1[:a] == [data: "eɪ"]
-    assert PTCache.getm.get_resource2[:d] == [data: "diː"]
-    assert PTCache.getm.get_resource1_names == [a: [data: "eɪ"],
-                                               c: [data: "siː"],
-                                               b: [data: "biː"]]
+    assert PTCache.config.env1 == "env1_value"
+    assert PTCache.config.env2 == "env2_value"
+    assert PTCache.config.dyn1 == 42
+    assert PTCache.config.kw1.kw1_env1 == "not default"
+    assert PTCache.config.kw1.kw1_dyn1 == :booo
+    assert PTCache.config.get_resource1[:a] == [data: "eɪ"]
+    assert PTCache.config.get_resource2[:d] == [data: "diː"]
+    assert PTCache.config.get_resource1_names == [a: [data: "eɪ"],
+                                                  c: [data: "siː"],
+                                                  b: [data: "biː"]]
 
     Application.put_env(@otp_app, :env2, "env2_another_value")
     assert PTCache.get() == cache
