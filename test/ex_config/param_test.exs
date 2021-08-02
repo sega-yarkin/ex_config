@@ -163,6 +163,7 @@ defmodule ExConfig.ParamTest do
     assert get.(%Param{@p1 | data: :data}) == :data
     assert get.(%Param{@p1 | data: :data, mod: %{@mod1 | on_error: :tuple}}) == {:ok, :data}
     assert get.(%Param{@p1 | data: nil, default: :default}) == :default
+    assert get.(%Param{@p1 | data: nil, default: fn -> :default_fn end}) == :default_fn
     assert get.(%Param{@p1 | data: nil, default: nil}) == nil
   end
 

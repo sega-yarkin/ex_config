@@ -37,5 +37,19 @@ defmodule ExConfig.Type.StringTest do
       assert to_chl.(nil) == nil
       assert to_chl.(123) == 123
     end
+
+    test "transform_downcase" do
+      transform = &(String.transform_downcase(%Param{data: &1}).data)
+      assert transform.("TEST String") == "test string"
+      assert transform.(nil) == nil
+      assert transform.(123) == 123
+    end
+
+    test "transform_upcase" do
+      transform = &(String.transform_upcase(%Param{data: &1}).data)
+      assert transform.("TeST String") == "TEST STRING"
+      assert transform.(nil) == nil
+      assert transform.(123) == 123
+    end
   end
 end

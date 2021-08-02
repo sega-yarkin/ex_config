@@ -14,6 +14,24 @@ defmodule ExConfig.Type.String do
   end
   def to_charlist(param), do: param
 
+  @doc """
+  Converts all characters in the string to lowercase.
+  """
+  @spec transform_downcase(ExConfig.Param.t) :: ExConfig.Param.t
+  def transform_downcase(%{data: data} = param) when is_binary(data) do
+    %{param | data: String.downcase(data)}
+  end
+  def transform_downcase(param), do: param
+
+  @doc """
+  Converts all characters in the string to uppercase.
+  """
+  @spec transform_upcase(ExConfig.Param.t) :: ExConfig.Param.t
+  def transform_upcase(%{data: data} = param) when is_binary(data) do
+    %{param | data: String.upcase(data)}
+  end
+  def transform_upcase(param), do: param
+
   @impl true
   def handle(data, _opts), do: do_handle(data)
 

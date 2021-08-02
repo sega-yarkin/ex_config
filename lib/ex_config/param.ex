@@ -168,7 +168,13 @@ defmodule ExConfig.Param do
   def get_result(%Param{error: reason}) when reason != nil,
     do: {:error, reason}
   def get_result(%Param{data: data, default: default} = param) do
-    data = if data != nil, do: data, else: default
+    data =
+      case {data, default} do
+        {nil, default} when is_function(default, 0) -> default.()
+        {nil, default} -> default
+        {data, _}      -> data
+      end
+
     # If in case of error tuple is returned, then results
     # should be returned in the same format.
     if on_error(param) == :tuple, do: {:ok, data}, else: data
