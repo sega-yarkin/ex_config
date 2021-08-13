@@ -26,7 +26,7 @@ defmodule ExConfigSimple.MixProject do
   defp deps() do
     [
       {:ex_config, path: "../../"},
-      {:dialyxir, "~> 1.0.0-rc.7", runtime: false},
+      {:dialyxir, "~> 1.1.0", runtime: false},
       {:benchee, "~> 1.0"},
     ]
   end

@@ -11,6 +11,9 @@ defmodule ExConfigSimple.Config do
   # We can define any functions.
   defp rand(), do: :crypto.strong_rand_bytes(4) |> Base.encode16(case: :lower)
 
+  def gethostname(), do: :"Elixir.List".to_string(:inet_db.gethostname())
+  env :hostname, String, default: &__MODULE__.gethostname/0
+
   # Defining application parameters as:
   # `env <name>[, <type>[, <options>]]`
   env :auth_enabled, Boolean, default: false
