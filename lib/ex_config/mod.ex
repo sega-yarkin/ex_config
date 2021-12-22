@@ -61,6 +61,8 @@ defmodule ExConfig.Mod do
                              | {:error, String.t}
                              | no_return
       def unquote(name)(), do: unquote(name)(__mod_data__())
+
+      @doc false
       def unquote(name)(%Mod{} = mod) do
         get_env(%{__parameter__(unquote(name)) | mod: mod})
       end
@@ -138,6 +140,11 @@ defmodule ExConfig.Mod do
   @spec get_env(Param.t) :: any | {:error, String.t} | {:ok, any} | no_return
   def get_env(%Param{} = param), do: Param.read(param)
 
+  @spec reject_nil_values(Keyword.t) :: Keyword.t
+  def reject_nil_values([{_, nil} | tail]), do: reject_nil_values(tail)
+  def reject_nil_values([    head | tail]), do: [head | reject_nil_values(tail)]
+  def reject_nil_values([]), do: []
+
   @spec opts_to_mod(Mod.t | Keyword.t, Macro.Env.t) :: Mod.t
   defp opts_to_mod(%Mod{} = mod, _), do: mod
   defp opts_to_mod(opts, env) when is_list(opts) do
@@ -163,16 +170,19 @@ defmodule ExConfig.Mod do
   end
 
   @spec camelize_atom(atom) :: atom
-  def camelize_atom(value) when is_atom(value),
-    do: value |> Atom.to_string() |> Macro.camelize() |> String.to_atom()
+  def camelize_atom(value) when is_atom(value) do
+    value |> Atom.to_string() |> Macro.camelize() |> String.to_atom()
+  end
 
   @spec child_mod_name(module, atom) :: module
-  def child_mod_name(parent, name),
-    do: Module.concat(parent, camelize_atom(name))
+  def child_mod_name(parent, name) do
+    Module.concat(parent, camelize_atom(name))
+  end
 
   @spec extend_path(Mod.t, atom) :: Mod.t
-  def extend_path(%Mod{path: path} = val, name),
-    do: %{val | path: path ++ [name]}
+  def extend_path(%Mod{path: path} = val, name) do
+    %{val | path: path ++ [name]}
+  end
 
   @spec child_mod(module, atom) :: {module, Mod.t}
   defp child_mod(parent, name) do
@@ -185,6 +195,7 @@ defmodule ExConfig.Mod do
   end
 
 
+  @spec get_parameters_data_quote(module) :: Macro.t
   defp get_parameters_data_quote(module) do
     parameters =
       module
@@ -207,10 +218,10 @@ defmodule ExConfig.Mod do
     ]
   end
 
+  @spec get_all_parameters_quote(module) :: Macro.t
   defp get_all_parameters_quote(module) do
-    module
-    |> Module.get_attribute(:parameters)
-    |> Enum.map(fn {name, _} ->
+    parameters = Module.get_attribute(module, :parameters)
+    Enum.map(parameters, fn {name, _} ->
       quote [], do: {unquote(name), __parameter__(unquote(name))}
     end)
   end
@@ -227,8 +238,8 @@ defmodule ExConfig.Mod do
   end
 
   defp get_resource_funs_quote(mod_name, name, list, opts) do
-    one = List.to_atom('get_' ++ Atom.to_charlist(name))
-    all = List.to_atom('get_' ++ Atom.to_charlist(list))
+    one = :"get_#{name}"
+    all = :"get_#{list}"
     quote do
       @resources {unquote(name), %{one: unquote(one), all: unquote(all)}}
 
@@ -270,14 +281,10 @@ defmodule ExConfig.Mod do
         mod = %{mod | options: options}
         extend_path = &ExConfig.Mod.extend_path(mod, &1)
         res = unquote(all)
-        if Keyword.get(options, :only_not_nil, false),
-          do: __filter_nil__(res),
-          else: res
-      end
-
-      @compile {:inline, __filter_nil__: 1}
-      defp __filter_nil__(res) do
-        Enum.reject(res, fn {_, v} -> is_nil(v) end)
+        case Keyword.get(options, :only_not_nil, false) do
+          true  -> ExConfig.Mod.reject_nil_values(res)
+          false -> res
+        end
       end
     end
   end

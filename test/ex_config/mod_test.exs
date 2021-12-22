@@ -90,11 +90,11 @@ defmodule ExConfig.ModTest do
     params = mod_meta(:parameters)
     keys = [:name, :type, :default, :required?]
     assert Map.take(params[:env1], keys) ==
-          %{name: :env1, type: %ExConfig.Type.Raw{}, default: nil, required?: false}
+          %{name: :env1, type: %ExConfig.Type.Raw{}, default: &ExConfig.Type.Raw.default/0, required?: false}
     assert Map.take(params[:env2], keys) ==
           %{name: :env2, type: %ExConfig.Type.Integer{range: {1, 100}}, default: 32, required?: false}
     assert Map.take(params[:env3], keys) ==
-          %{name: :env3, type: %ExConfig.Type.String{}, default: nil, required?: true}
+          %{name: :env3, type: %ExConfig.Type.String{}, default: &ExConfig.Type.String.default/0, required?: true}
 
     assert @mod_name.env1 == nil
     assert @mod_name.env2 == 32

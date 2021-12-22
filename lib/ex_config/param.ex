@@ -30,20 +30,23 @@ defmodule ExConfig.Param do
 
   @spec init(Mod.t | nil, atom, module, Keyword.t) :: Param.t
   def init(mod, name, type, opts) do
+    {default  , opts} = Keyword.pop(opts, :default, &type.default/0)
+    {required?, opts} = Keyword.pop(opts, :required, false)
+    {transform, opts} = Keyword.pop(opts, :transform, nil)
+
     %Param{
       mod:  mod,
       name: name,
       type: create_type_instance(type, opts),
-      default:   Keyword.get(opts, :default, type.default()),
-      required?: Keyword.get(opts, :required, false),
-      transform: Keyword.get(opts, :transform, nil),
+      default:   default,
+      required?: required?,
+      transform: transform,
     }
   end
 
   @spec create_type_instance(module, Keyword.t) :: struct
   def create_type_instance(type, opts) do
     apply(type, :validators, [])
-    # type.validators()
     |> ExConfig.Type.validate_options!(opts, type)
     |> type.init()
   end
@@ -132,8 +135,7 @@ defmodule ExConfig.Param do
   def convert_data(param), do: param
 
   @spec check_requirement(Param.t) :: Param.t
-  def check_requirement(%Param{error: nil, required?: true,
-                               data: nil, default: nil,
+  def check_requirement(%Param{error: nil, required?: true, data: nil,
                                name: name} = param) do
     %{param | error: "Parameter '#{name}' must be set"}
   end

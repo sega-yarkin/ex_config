@@ -6,12 +6,12 @@ defmodule ExConfig.ParamTest do
   @mod1 %ExConfig.Mod{otp_app: @otp_app}
   @p1name :param1
   @t1 Type.Raw
-  @p1 %Param{mod: @mod1, name: @p1name, type: %Type.Raw{}}
+  @p1 %Param{mod: @mod1, name: @p1name, type: %Type.Raw{}, default: &ExConfig.Type.Raw.default/0}
 
   test "init" do
     init = &Param.init(@mod1, @p1name, @t1, &1)
 
-    assert init.([]) == %Param{@p1 | required?: false, default: nil}
+    assert init.([]) == %Param{@p1 | required?: false, default: &ExConfig.Type.Raw.default/0}
     assert init.(required: true) == %Param{@p1 | required?: true}
     assert init.(default: :some) == %Param{@p1 | default: :some}
   end
@@ -105,7 +105,8 @@ defmodule ExConfig.ParamTest do
 
   test "default_in_type" do
     assert Param.init(@mod1, @p1name, TestType, [])
-        == %Param{@p1 | type: %TestType{}, default: :other_default}
+        == %Param{@p1 | type: %TestType{}, default: &TestType.default/0}
+    assert TestType.default() == :other_default
   end
 
   test "convert_data" do
