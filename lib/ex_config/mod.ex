@@ -142,7 +142,7 @@ defmodule ExConfig.Mod do
 
   @spec reject_nil_values(Keyword.t) :: Keyword.t
   def reject_nil_values([{_, nil} | tail]), do: reject_nil_values(tail)
-  def reject_nil_values([    head | tail]), do: [head | reject_nil_values(tail)]
+  def reject_nil_values([head     | tail]), do: [head | reject_nil_values(tail)]
   def reject_nil_values([]), do: []
 
   @spec opts_to_mod(Mod.t | Keyword.t, Macro.Env.t) :: Mod.t

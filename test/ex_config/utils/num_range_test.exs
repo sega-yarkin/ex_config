@@ -35,16 +35,15 @@ defmodule ExConfig.Utils.NumRangeTest do
       assert validate(10..20) == {:ok, {10, 20}}
       assert validate(20..10) == {:ok, {10, 20}}
     end
+  end
 
-    if Version.match?(System.version(), ">= 1.12.0") do
-      test "from Range/3" do
-        import NumRange, only: [validate: 1]
-        assert validate(10..20//1) == {:ok, {10, 20}}
-        assert validate(20..10//-1) == {:ok, {10, 20}}
-        assert validate(10..20//2) == :error
-      end
+  if Version.match?(System.version(), ">= 1.12.0") do
+    test "validate/1 from Range/3" do
+      import NumRange, only: [validate: 1]
+      assert validate(10..20//1) == {:ok, {10, 20}}
+      assert validate(20..10//-1) == {:ok, {10, 20}}
+      assert validate(10..20//2) == :error
     end
-
   end
 
   test "in_range?/2" do
