@@ -35,14 +35,17 @@ defmodule ExConfig.Utils.NumRangeTest do
       assert validate(10..20) == {:ok, {10, 20}}
       assert validate(20..10) == {:ok, {10, 20}}
     end
-  end
 
-  if Version.match?(System.version(), ">= 1.12.0") do
-    test "validate/1 from Range/3" do
+    test "from Range/3" do
+      # NOTE: This form is supported only since Elixir 1.12, so we have do tricks
       import NumRange, only: [validate: 1]
-      assert validate(10..20//1) == {:ok, {10, 20}}
-      assert validate(20..10//-1) == {:ok, {10, 20}}
-      assert validate(10..20//2) == :error
+      range = &%{__struct__: Range, first: &1, last: &2, step: &3}
+      # 10..20//1
+      assert validate(range.(10, 20, 1)) == {:ok, {10, 20}}
+      # 20..10//-1
+      assert validate(range.(20, 10, -1)) == {:ok, {10, 20}}
+      # 10..20//2
+      assert validate(range.(10, 20, 2)) == :error
     end
   end
 
