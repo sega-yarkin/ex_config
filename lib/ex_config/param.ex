@@ -46,7 +46,7 @@ defmodule ExConfig.Param do
 
   @spec create_type_instance(module, Keyword.t) :: struct
   def create_type_instance(type, opts) do
-    apply(type, :validators, [])
+    type.validators()
     |> ExConfig.Type.validate_options!(opts, type)
     |> type.init()
   end
@@ -127,7 +127,7 @@ defmodule ExConfig.Param do
   @spec convert_data(Param.t) :: Param.t
   def convert_data(%Param{exist?: true, error: nil,
                           data: data, type: type} = param) do
-    case apply(Map.fetch!(type, :__struct__), :handle, [data, type]) do
+    case Map.fetch!(type, :__struct__).handle(data, type) do
       {:ok, data}      -> %{param | data: data}
       {:error, reason} -> %{param | error: reason}
     end
@@ -161,7 +161,7 @@ defmodule ExConfig.Param do
 
   @spec transform(transform_fun | {module, atom}, Param.t) :: Param.t
   defp transform(fun, val) when is_function(fun),
-    do: apply(fun, [val])
+    do: fun.(val)
   defp transform({m, f}, val) when is_atom(m) and is_atom(f),
     do: apply(m, f, [val])
 
