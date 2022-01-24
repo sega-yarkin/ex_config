@@ -23,7 +23,7 @@ defmodule ExConfig.Type.Integer do
   ]
 
   @impl true
-  def handle(data, opts) do
+  def handle(data, %{} = opts) do
     Param.until_error(data, [
       &parse(&1, opts),
       &Number.maybe_check_range(&1, opts),
@@ -41,16 +41,25 @@ defmodule ExConfig.Type.Integer do
 
   @spec parse(any, map) :: {:ok, integer} | {:error, String.t}
   defp parse(data, _) when is_integer(data), do: {:ok, data}
-  defp parse(data, opts) when is_list(data), do: parse(to_string(data), opts)
-  defp parse(<<"0b", num :: binary>>, %{base: 2} = opts), do: parse(num, opts)
-  defp parse(<<"0o", num :: binary>>, %{base: 8} = opts), do: parse(num, opts)
-  defp parse(<<"0x", num :: binary>>, %{base: 16} = opts), do: parse(num, opts)
-  defp parse(data, opts) when is_binary(data) do
-    case data |> String.trim() |> Integer.parse(opts.base) do
-      {value, ""} -> {:ok, value}
-      _           -> error(:bad_data, data)
+  defp parse(data, %{} = opts) do
+    case do_parse(data, opts) do
+      :error -> error(:bad_data, data)
+      value when is_integer(value) -> {:ok, value}
     end
   end
-  defp parse(data, _), do: error(:bad_data, data)
+
+  defp do_parse(data, opts) when is_list(data), do: do_parse(to_string(data), opts)
+  defp do_parse(<<"0b", num :: binary>>, %{base: 2} = opts), do: do_parse_str(num, opts)
+  defp do_parse(<<"0o", num :: binary>>, %{base: 8} = opts), do: do_parse_str(num, opts)
+  defp do_parse(<<"0x", num :: binary>>, %{base: 16} = opts), do: do_parse_str(num, opts)
+  defp do_parse(data, opts) when is_binary(data), do: do_parse_str(data, opts)
+  defp do_parse(_, _), do: :error
+
+  defp do_parse_str(str, %{base: base}) do
+    case Integer.parse(String.trim(str), base) do
+      {value, ""} -> value
+      _           -> :error
+    end
+  end
 
 end

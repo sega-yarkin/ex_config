@@ -1,5 +1,6 @@
 defmodule ExConfig.Resource.EctoPostgresTest do
   use ExUnit.Case, async: false
+  @compile {:no_warn_undefined, ExConfig.EctoPostgresTestModule}
 
   @otp_app ExConfigTestApp
   @mod_name ExConfig.EctoPostgresTestModule

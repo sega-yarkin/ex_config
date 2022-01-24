@@ -7,11 +7,9 @@ defmodule ExConfig.Utils.NumRange do
 
   @spec validate(any) :: ExConfig.Type.validator_result(t)
   def validate(nil), do: :skip
-
-  def validate(%Range{first: first, last: last}) do
-    range = if first > last, do: {last, first}, else: {first, last}
-    {:ok, range}
-  end
+  # `step` in Range is since Elixir 1.12
+  def validate(%{__struct__: Range, step: step}) when step not in [1, -1], do: :error
+  def validate(%Range{first: first, last: last}), do: validate({first, last})
 
   def validate({min, max}) when is_number(min) and is_number(max) do
     range = if min < max, do: {min, max}, else: {max, min}

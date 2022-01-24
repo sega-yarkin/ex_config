@@ -2,9 +2,11 @@ defmodule ExConfig.Type.NumberTest do
   use ExUnit.Case, async: true
   alias ExConfig.Type.Number
   alias ExConfig.Param.TypeOptionError
+  alias ExConfig.Utils.NumRange
 
-  defp instance(opts \\ []),
-    do: ExConfig.Param.create_type_instance(Number, opts)
+  defp instance(opts \\ []) do
+    ExConfig.Param.create_type_instance(Number, opts)
+  end
 
   test "init/1" do
     assert %Number{} == instance([])
@@ -51,14 +53,16 @@ defmodule ExConfig.Type.NumberTest do
 
     test "when invalid data" do
       handle = &Number.handle(&1, instance())
-      err = &Number.error(:bad_data, &1)
+      should_error = fn value ->
+        assert handle.(value) == Number.error(:bad_data, value)
+      end
 
-      assert handle.("0.01.01") == err.("0.01.01")
-      assert handle.('0.01.01') == err.("0.01.01")
-      assert handle.("") == err.("")
-      assert handle.("abc") == err.("abc")
-      assert handle.(nil) == err.(nil)
-      assert handle.(:ok) == err.(:ok)
+      should_error.("0.01.01")
+      should_error.('0.01.01')
+      should_error.("")
+      should_error.("abc")
+      should_error.(nil)
+      should_error.(:ok)
     end
   end
 
@@ -66,26 +70,29 @@ defmodule ExConfig.Type.NumberTest do
     test "when number is in" do
       handle = &Number.handle(&1, instance(range: &2))
 
-      assert handle.(100, {0, 100}) == {:ok, 100}
-      assert handle.(100, 0..100) == {:ok, 100}
-      assert handle.(100, 100..0) == {:ok, 100}
-      assert handle.(100, {:gt, 99}) == {:ok, 100}
-      assert handle.(100, {:ge, 100}) == {:ok, 100}
-      assert handle.(100, {:lt, 101}) == {:ok, 100}
-      assert handle.(100, {:le, 100}) == {:ok, 100}
+      assert handle.(100.0, {0, 100}) == {:ok, 100.0}
+      assert handle.(100.0, 0..100) == {:ok, 100.0}
+      assert handle.(100.0, 100..0) == {:ok, 100.0}
+      assert handle.(100.0, {:gt, 99}) == {:ok, 100.0}
+      assert handle.(100.0, {:ge, 100}) == {:ok, 100.0}
+      assert handle.(100.0, {:lt, 101}) == {:ok, 100.0}
+      assert handle.(100.0, {:le, 100}) == {:ok, 100.0}
     end
 
     test "when number is out" do
       handle = &Number.handle(&1, instance(range: &2))
-      err = &Number.error(:out_of_range, {&1/1, &2})
+      should_error = fn value, range ->
+        {:ok, range2} = NumRange.validate(range)
+        assert handle.(value, range) == Number.error(:out_of_range, {value/1, range2})
+      end
 
-      assert handle.(101, {0, 100}) == err.(101, {0, 100})
-      assert handle.(101, 0..100) == err.(101, {0, 100})
-      assert handle.(101, 100..0) == err.(101, {0, 100})
-      assert handle.(0, {:gt, 100}) == err.(0, {:gt, 100})
-      assert handle.(0, {:ge, 100}) == err.(0, {:ge, 100})
-      assert handle.(101, {:lt, 100}) == err.(101, {:lt, 100})
-      assert handle.(101, {:le, 100}) == err.(101, {:le, 100})
+      should_error.(101.0, {0, 100})
+      should_error.(101.0, 0..100)
+      should_error.(101.0, 100..0)
+      should_error.(0.0, {:gt, 100})
+      should_error.(0.0, {:ge, 100})
+      should_error.(101.0, {:lt, 100})
+      should_error.(101.0, {:le, 100})
     end
   end
 
