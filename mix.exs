@@ -25,9 +25,9 @@ defmodule ExConfig.MixProject do
 
   defp deps do
     [
-      {:credo, "~> 1.5.0", only: :dev, runtime: false},
+      {:credo, "~> 1.6.0", only: :dev, runtime: false},
       {:dialyxir, "~> 1.1.0", only: :dev, runtime: false},
-      {:excoveralls, "~> 0.14.1", only: :dev, runtime: false},
+      {:excoveralls, "~> 0.14.4", only: :dev, runtime: false},
       {:ex_doc, "~> 0.24", only: :dev, runtime: false},
     ]
   end
