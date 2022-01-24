@@ -88,7 +88,7 @@ defmodule ExConfig.Type.List do
   defp do_handle(data, _opts), do: error(:bad_data, data)
 
   defp do_handle_reducer(%{__struct__: item_type} = item, elem, acc) do
-    case apply(item_type, :handle, [elem, item]) do
+    case item_type.handle(elem, item) do
       {:ok, parsed}    -> {:cont, [parsed | acc]}
       {:error, reason} -> {:halt, {:error, reason}}
     end

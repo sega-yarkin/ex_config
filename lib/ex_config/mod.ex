@@ -24,6 +24,7 @@ defmodule ExConfig.Mod do
                          on_error: on_error()]
 
   @self __MODULE__
+  # credo:disable-for-next-line Credo.Check.Refactor.Apply
   @test_env? function_exported?(Mix, :env, 0) and apply(Mix, :env, []) in [:dev, :test]
 
   @spec __using__(mod_params | Mod.t) :: Macro.t
@@ -232,7 +233,7 @@ defmodule ExConfig.Mod do
     quote do
       def unquote(name)() do
         mod = __resource_mod__(unquote(name), unquote(Macro.escape(opts)))
-        apply(unquote(mod_name), :_all, [mod])
+        unquote(mod_name)._all(mod)
       end
     end
   end
@@ -245,7 +246,7 @@ defmodule ExConfig.Mod do
 
       def unquote(one)(name) do
         mod = __resource_mod__(name, unquote(Macro.escape(opts)))
-        apply(unquote(mod_name), :_all, [mod])
+        unquote(mod_name)._all(mod)
       end
 
       def unquote(all)() do
