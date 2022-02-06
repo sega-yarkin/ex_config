@@ -26,6 +26,9 @@ defmodule ExConfig.Type.ListTest do
     assert_raise ExConfig.Param.TypeOptionError, fn ->
       assert :ok = instance(item: __MODULE__.InitError)
     end
+    assert_raise ExConfig.Param.TypeOptionError, fn ->
+      assert :ok = instance(item: "item")
+    end
   end
 
   test "default/0" do
