@@ -54,8 +54,6 @@ defmodule ExConfig.Type.List do
   @spec validate_item(any) :: ExConfig.Type.validator_result(item_def)
   defp validate_item(nil), do: :skip
   defp validate_item({type, opts}) when is_atom(type) and is_list(opts) do
-    # {:module, _} = Code.ensure_loaded(type)
-    # true = function_exported?(type, :init, 1)
     true = 1 in :proplists.get_all_values(:init, type.__info__(:functions))
     {:ok, {type, opts}}
   rescue

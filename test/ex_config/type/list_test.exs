@@ -22,6 +22,14 @@ defmodule ExConfig.Type.ListTest do
     # trim?
     assert false == instance(keep_empty?: false).keep_empty?
     assert true == instance(keep_empty?: true).keep_empty?
+    # invalid item
+    assert_raise ExConfig.Param.TypeOptionError, fn ->
+      assert :ok = instance(item: __MODULE__.InitError)
+    end
+  end
+
+  test "default/0" do
+    assert Type.List.default() == []
   end
 
   test "handle (splitting)" do
