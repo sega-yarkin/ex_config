@@ -11,7 +11,7 @@ jobs:
     name: mix test (Elixir ${{ matrix.elixir }} OTP ${{ matrix.otp }})
     strategy:
       matrix:
-        elixir: ['1.8.0', '1.8.2', '1.9.4', '1.10.4', '1.10.x', '1.11.4', '1.11.x', '1.12.3', '1.12.x', '1.13.2', '1.13.x']
+        elixir: ['1.8.0', '1.8.2', '1.9.4', '1.10.4', '1.10.x', '1.11.4', '1.11.x', '1.12.3', '1.12.x', '1.13.3', '1.13.4', '1.13.x']
         include:
         - elixir: '1.8.0'
           otp: '21.x'
@@ -31,10 +31,12 @@ jobs:
           otp: '23.x'
         - elixir: '1.12.x'
           otp: '24.x'
-        - elixir: '1.13.2'
+        - elixir: '1.13.3'
           otp: '23.x'
-        - elixir: '1.13.x'
+        - elixir: '1.13.4'
           otp: '24.x'
+        - elixir: '1.13.x'
+          otp: '25.x'
     runs-on: ubuntu-20.04
 
     env:
@@ -66,7 +68,7 @@ jobs:
         elixir: ['1.13.x']
         include:
         - elixir: '1.13.x'
-          otp: '24.x'
+          otp: '25.x'
     runs-on: ubuntu-20.04
 
     env:
@@ -98,7 +100,7 @@ jobs:
         elixir: ['1.13.x']
         include:
         - elixir: '1.13.x'
-          otp: '24.x'
+          otp: '25.x'
     runs-on: ubuntu-20.04
 
     env:
@@ -142,7 +144,7 @@ jobs:
         elixir: ['1.13.x']
         include:
         - elixir: '1.13.x'
-          otp: '24.x'
+          otp: '25.x'
     runs-on: ubuntu-20.04
 
     env:
