@@ -9,9 +9,10 @@ defmodule ExConfig.Source.FS.Glob do
     match_dot: boolean(),
   }
 
-  @impl true
+  @impl ExConfig.Source
   def handle(%{expr: expr, match_dot: match_dot}, _) do
     opts = [match_dot: match_dot]
+
     data =
       expr
       |> List.wrap()

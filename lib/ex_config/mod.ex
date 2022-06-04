@@ -15,23 +15,32 @@ defmodule ExConfig.Mod do
     on_error: on_error(),
   }
 
-  @type on_error() :: :default | :tuple | :throw
+  @type on_error() :: :default | :throw
   @type mod_opts() :: [only_not_nil: boolean()]
 
-  @type mod_params() :: [otp_app: atom(),
-                         path: list(atom()),
-                         options: mod_opts(),
-                         on_error: on_error()]
+  @type mod_params() :: [
+    otp_app: atom(),
+    path: [atom()],
+    options: mod_opts(),
+    on_error: on_error(),
+  ]
 
   @self __MODULE__
+  # credo:disable-for-next-line Credo.Check.Refactor.Apply
   @test_env? function_exported?(Mix, :env, 0) and apply(Mix, :env, []) in [:dev, :test]
 
-  @spec __using__(mod_params | Mod.t) :: Macro.t
+  @spec __using__(mod_params() | Mod.t()) :: Macro.t()
   defmacro __using__(opts) do
     data = opts_to_mod(opts, __CALLER__)
-    Module.put_attribute(Map.fetch!(__CALLER__, :module), :data, data)
+    Module.put_attribute(__CALLER__.module, :data, data)
+
     quote do
-      import unquote(@self)
+      import unquote(@self), only: [
+        env: 1, env: 2, env: 3, dyn: 2,
+        keyword: 2, resource: 2, resource: 3,
+        get_env: 1
+      ]
+
       @before_compile unquote(@self)
       @behaviour ExConfig.Resource
 
@@ -51,29 +60,29 @@ defmodule ExConfig.Mod do
     end
   end
 
-  @spec env(atom, module, Keyword.t) :: Macro.t
+  @spec env(atom(), module(), Keyword.t()) :: Macro.t()
   defmacro env(name, type \\ Type.Raw, opts \\ []) do
     quote do
       @param unquote(@self).__env__(@data, unquote(name), unquote(type), unquote(opts))
       @parameters {unquote(name), @param}
-      @spec unquote(name)() :: unquote(type).result()
-                             | {:ok, unquote(type).result()}
-                             | {:error, String.t}
-                             | no_return
+
+      @spec unquote(name)() :: unquote(type).result() | no_return()
       def unquote(name)(), do: unquote(name)(__mod_data__())
+
+      @doc false
       def unquote(name)(%Mod{} = mod) do
         get_env(%{__parameter__(unquote(name)) | mod: mod})
       end
     end
   end
 
-  @spec __env__(Mod.t, atom, module, keyword) :: Param.t
+  @spec __env__(Mod.t(), atom(), module(), Keyword.t()) :: Param.t()
   def __env__(%Mod{options: mod_opts}, name, type, opts) do
     opts = Keyword.merge(mod_opts, opts)
     Param.init(nil, name, type, opts)
   end
 
-  @spec dyn(atom, Keyword.t) :: Macro.t
+  @spec dyn(atom(), Keyword.t()) :: Macro.t()
   defmacro dyn(name, do: block) do
     quote do
       @parameters {unquote(name), nil}
@@ -82,9 +91,10 @@ defmodule ExConfig.Mod do
     end
   end
 
-  @spec keyword(atom, Keyword.t) :: Macro.t
+  @spec keyword(atom(), Keyword.t()) :: Macro.t()
   defmacro keyword(name, do: block) do
-    {mod_name, opts} = child_mod(Map.fetch!(__CALLER__, :module), name)
+    {mod_name, opts} = child_mod(__CALLER__.module, name)
+
     quote do
       @keywords {unquote(name), unquote(mod_name)}
       defmodule unquote(mod_name) do
@@ -94,10 +104,12 @@ defmodule ExConfig.Mod do
     end
   end
 
-  @spec resource(atom, atom, Keyword.t) :: Macro.t
+  @spec resource(atom(), atom(), Keyword.t()) :: Macro.t()
   defmacro resource(name, list \\ nil, block_or_opts)
+
   defmacro resource(name, list, do: block) do
-    {mod_name, opts} = child_mod(Map.fetch!(__CALLER__, :module), name)
+    {mod_name, opts} = child_mod(__CALLER__.module, name)
+
     [
       quote do
         defmodule unquote(mod_name) do
@@ -115,10 +127,11 @@ defmodule ExConfig.Mod do
   end
 
 
-  @spec __before_compile__(Keyword.t) :: Macro.t
+  @spec __before_compile__(Keyword.t()) :: Macro.t()
   defmacro __before_compile__(_env) do
     module = Map.fetch!(__CALLER__, :module)
     parameters = get_all_parameters_quote(module)
+
     [
       get_parameters_data_quote(module),
       get_all_quote(module),
@@ -135,26 +148,36 @@ defmodule ExConfig.Mod do
     ] |> List.flatten()
   end
 
-  @spec get_env(Param.t) :: any | {:error, String.t} | {:ok, any} | no_return
+  @spec get_env(Param.t()) :: any() | no_return()
   def get_env(%Param{} = param), do: Param.read(param)
 
-  @spec opts_to_mod(Mod.t | Keyword.t, Macro.Env.t) :: Mod.t
+  @spec reject_nil_values(Keyword.t()) :: Keyword.t()
+  def reject_nil_values([{_, nil} | tail]), do: reject_nil_values(tail)
+  def reject_nil_values([head     | tail]), do: [head | reject_nil_values(tail)]
+  def reject_nil_values([]), do: []
+
+  @spec opts_to_mod(Mod.t() | Keyword.t(), Macro.Env.t()) :: Mod.t() | no_return()
   defp opts_to_mod(%Mod{} = mod, _), do: mod
   defp opts_to_mod(opts, env) when is_list(opts) do
     opts = expand_ast_kw([otp_app: :basic, path: :list,
                           options: :kw, on_error: :basic],
                          opts, env)
-    struct(Mod, opts)
+    mod = struct(Mod, opts)
+    if not Enum.all?(mod.path, &is_atom/1) do
+      raise "non-atom element provided as a path item"
+    end
+
+    mod
   end
 
-  @spec expand_ast(atom, any, Macro.Env.t) :: any
+  @spec expand_ast(atom(), any(), Macro.Env.t()) :: any()
   defp expand_ast(:basic, value, env), do: Macro.expand(value, env)
   defp expand_ast(:list, values, env), do: Enum.map(values, &Macro.expand(&1, env))
   defp expand_ast(:kw, pairs, env) do
     for {key, value} <- pairs, do: {key, Macro.expand(value, env)}
   end
 
-  @spec expand_ast_kw(Keyword.t, Keyword.t, Macro.Env.t) :: Keyword.t
+  @spec expand_ast_kw(Keyword.t(), Keyword.t(), Macro.Env.t()) :: Keyword.t()
   defp expand_ast_kw(meta, pairs, env) do
     for {key, type}  <- meta,
         {:ok, value} <- [Keyword.fetch(pairs, key)] do
@@ -162,29 +185,30 @@ defmodule ExConfig.Mod do
     end
   end
 
-  @spec camelize_atom(atom) :: atom
-  def camelize_atom(value) when is_atom(value),
-    do: value |> Atom.to_string() |> Macro.camelize() |> String.to_atom()
+  @spec camelize_atom(atom()) :: atom()
+  def camelize_atom(value) when is_atom(value) do
+    value |> Atom.to_string() |> Macro.camelize() |> String.to_atom()
+  end
 
-  @spec child_mod_name(module, atom) :: module
-  def child_mod_name(parent, name),
-    do: Module.concat(parent, camelize_atom(name))
+  @spec child_mod_name(module(), atom()) :: module()
+  def child_mod_name(parent, name) do
+    Module.concat(parent, camelize_atom(name))
+  end
 
-  @spec extend_path(Mod.t, atom) :: Mod.t
-  def extend_path(%Mod{path: path} = val, name),
-    do: %{val | path: path ++ [name]}
+  @spec extend_path(Mod.t(), atom()) :: Mod.t()
+  def extend_path(%Mod{path: path} = val, name) do
+    %{val | path: path ++ [name]}
+  end
 
-  @spec child_mod(module, atom) :: {module, Mod.t}
+  @spec child_mod(module(), atom()) :: {module(), Mod.t()}
   defp child_mod(parent, name) do
     mod_name = child_mod_name(parent, name)
-    opts =
-      parent
-      |> Module.get_attribute(:data)
-      |> extend_path(name)
+    opts = extend_path(Module.get_attribute(parent, :data), name)
     {mod_name, opts}
   end
 
 
+  @spec get_parameters_data_quote(module()) :: Macro.t()
   defp get_parameters_data_quote(module) do
     parameters =
       module
@@ -196,45 +220,49 @@ defmodule ExConfig.Mod do
         @compile {:inline, __parameter__: 1}
         @dialyzer {:nowarn_function, __parameter__: 1}
       end,
+
       Enum.map(parameters, fn {name, param} ->
         quote do
           defp __parameter__(unquote(name)), do: unquote(Macro.escape(param))
         end
       end),
+
       quote do
         defp __parameter__(_), do: nil
       end
     ]
   end
 
+  @spec get_all_parameters_quote(module()) :: Macro.t()
   defp get_all_parameters_quote(module) do
-    module
-    |> Module.get_attribute(:parameters)
-    |> Enum.map(fn {name, _} ->
+    parameters = Module.get_attribute(module, :parameters)
+
+    Enum.map(parameters, fn {name, _} ->
       quote [], do: {unquote(name), __parameter__(unquote(name))}
     end)
   end
 
-  @spec get_resource_funs_quote(module, atom, atom, Keyword.t) :: Macro.t
+  @spec get_resource_funs_quote(module(), atom(), atom(), Keyword.t()) :: Macro.t()
   defp get_resource_funs_quote(mod_name, name, list, opts \\ [])
+
   defp get_resource_funs_quote(mod_name, name, nil, opts) do
     quote do
       def unquote(name)() do
         mod = __resource_mod__(unquote(name), unquote(Macro.escape(opts)))
-        apply(unquote(mod_name), :_all, [mod])
+        unquote(mod_name)._all(mod)
       end
     end
   end
 
   defp get_resource_funs_quote(mod_name, name, list, opts) do
-    one = List.to_atom('get_' ++ Atom.to_charlist(name))
-    all = List.to_atom('get_' ++ Atom.to_charlist(list))
+    one = :"get_#{name}"
+    all = :"get_#{list}"
     quote do
       @resources {unquote(name), %{one: unquote(one), all: unquote(all)}}
 
       def unquote(one)(name) do
         mod = __resource_mod__(name, unquote(Macro.escape(opts)))
-        apply(unquote(mod_name), :_all, [mod])
+        unquote(mod_name)._all(mod)
       end
 
       def unquote(all)() do
@@ -243,7 +271,7 @@ defmodule ExConfig.Mod do
     end
   end
 
-  @spec get_all_quote(module) :: Macro.t
+  @spec get_all_quote(module()) :: Macro.t()
   defp get_all_quote(module) do
     mod_attr = &Module.get_attribute(module, &1)
 
@@ -265,19 +293,17 @@ defmodule ExConfig.Mod do
 
     quote do
       def _all(), do: _all(__mod_data__())
+
       def _all(%Mod{options: options} = mod) do
         options = Keyword.merge(unquote(own_options), options)
         mod = %{mod | options: options}
         extend_path = &ExConfig.Mod.extend_path(mod, &1)
         res = unquote(all)
-        if Keyword.get(options, :only_not_nil, false),
-          do: __filter_nil__(res),
-          else: res
-      end
 
-      @compile {:inline, __filter_nil__: 1}
-      defp __filter_nil__(res) do
-        Enum.reject(res, fn {_, v} -> is_nil(v) end)
+        case Keyword.get(options, :only_not_nil, false) do
+          true  -> ExConfig.Mod.reject_nil_values(res)
+          false -> res
+        end
       end
     end
   end

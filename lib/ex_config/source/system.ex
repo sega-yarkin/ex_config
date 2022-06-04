@@ -13,11 +13,11 @@ defmodule ExConfig.Source.System do
     expand:    boolean(),
   }
 
-  @impl true
+  @impl ExConfig.Source
   def handle(%{name: name, default: default, expand: expand}, param) do
     find_fn = case expand do
-      true  -> &get_env_by_pattern(&1, param)
       false -> &System.get_env/1
+      true  -> &get_env_by_pattern(&1, param)
     end
 
     data = Enum.find_value(List.wrap(name), default, find_fn)
@@ -26,6 +26,7 @@ defmodule ExConfig.Source.System do
 
   defp get_env_by_pattern(pattern, %{name: name} = _param) do
     name = name |> Atom.to_string() |> String.upcase()
+
     pattern
     |> String.replace("${name}", name)
     |> System.get_env()
@@ -71,7 +72,7 @@ defmodule ExConfig.Source.System do
   defp find_envs_by_patterns(patterns) do
     patterns =
       patterns
-      |> Enum.map(&env_pattern_mask/1)
+      |> Enum.map(&env_pattern_mask!/1)
       |> Enum.reject(&match?(:error, &1))
 
     any_pattern? = fn env -> Enum.any?(patterns, &Regex.match?(&1, env)) end
@@ -81,8 +82,8 @@ defmodule ExConfig.Source.System do
     |> Enum.filter(any_pattern?)
   end
 
-  @spec env_pattern_mask(String.t) :: Regex.t | :error
-  defp env_pattern_mask(pattern) do
+  @spec env_pattern_mask!(String.t) :: Regex.t | no_return
+  defp env_pattern_mask!(pattern) do
     to_replace = Regex.escape("${name}")
     pattern =
       pattern
@@ -90,10 +91,7 @@ defmodule ExConfig.Source.System do
       |> String.replace(to_replace, "([A-Z0-9_]+)", global: false)
       |> String.replace(to_replace, "\\1")
 
-    case Regex.compile("^" <> pattern <> "$") do
-      {:ok, re}   -> re
-      {:error, _} -> :error
-    end
+    Regex.compile!("^" <> pattern <> "$")
   end
 
 end

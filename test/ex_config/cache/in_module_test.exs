@@ -2,6 +2,9 @@ defmodule ExConfig.Cache.InModuleTest do
   use ExUnit.Case, async: false
   alias ExConfig.Cache.InModule, as: IMCache
 
+  @compile {:no_warn_undefined, ExConfig.InModuleTestModuleCache}
+  @compile {:no_warn_undefined, ExConfig.InModuleTestModuleCache.Kw1}
+
   @otp_app ExConfigTestApp
   @mod_name  ExConfig.InModuleTestModuleOrig
   @mod_cache ExConfig.InModuleTestModuleCache

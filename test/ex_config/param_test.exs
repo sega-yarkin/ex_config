@@ -4,68 +4,100 @@ defmodule ExConfig.ParamTest do
 
   @otp_app ExConfigTestApp
   @mod1 %ExConfig.Mod{otp_app: @otp_app}
-  @p1name :param1
+  @p1name __MODULE__
   @t1 Type.Raw
-  @p1 %Param{mod: @mod1, name: @p1name, type: %Type.Raw{}}
+  @p1 %Param{mod: @mod1, name: @p1name, type: %Type.Raw{}, default: &ExConfig.Type.Raw.default/0}
 
   test "init" do
     init = &Param.init(@mod1, @p1name, @t1, &1)
 
-    assert init.([]) == %Param{@p1 | required?: false, default: nil}
+    assert init.([]) == %Param{@p1 | required?: false, default: &ExConfig.Type.Raw.default/0}
     assert init.(required: true) == %Param{@p1 | required?: true}
     assert init.(default: :some) == %Param{@p1 | default: :some}
   end
 
-  test "read_app_env" do
-    init = &Param.init(&1, @p1name, @t1, [])
-    read = &Param.read_app_env/1
-    val1 = "value1"
-    val2 = [{@p1name, val1}]
-    mod1sub1 = %{@mod1 | path: [:sub]}
+  describe "read_app_env" do
+    test "properly handles empty values" do
+      read = &Param.read_app_env/1
 
-    # Exists, is not null
-    Application.put_env(@otp_app, @p1name, val1)
-    Application.put_env(@otp_app, :sub, val2)
-    assert read.(init.(@mod1)) == %Param{@p1 | data: val1, exist?: true}
-    assert read.(init.(mod1sub1)) == %Param{@p1 | mod: mod1sub1, data: val2, exist?: true}
-    # Exists, is null
-    Application.put_env(@otp_app, @p1name, nil)
-    Application.put_env(@otp_app, :sub, nil)
-    assert read.(init.(@mod1)) == %Param{@p1 | data: nil, exist?: true}
-    assert read.(init.(mod1sub1)) == %Param{@p1 | mod: mod1sub1, data: nil, exist?: true}
-    # Does not exist
-    Application.delete_env(@otp_app, @p1name)
-    Application.delete_env(@otp_app, :sub)
-    assert read.(init.(@mod1)) == %Param{@p1 | data: nil, exist?: false}
-    assert read.(init.(mod1sub1)) == %Param{@p1 | mod: mod1sub1, data: nil, exist?: false}
+      # Exists, is not null
+      Application.put_env(@otp_app, @p1name, "value1")
+      assert %Param{data: "value1", exist?: true} = read.(@p1)
+      # Exists, is null
+      Application.put_env(@otp_app, @p1name, nil)
+      assert %Param{data: nil, exist?: true} = read.(@p1)
+      # Does not exist
+      Application.delete_env(@otp_app, @p1name)
+      assert %Param{data: nil, exist?: false} = read.(@p1)
+    end
+
+    test "reads nested value" do
+      read = &Param.read_app_env/1
+      param = &(%Param{@p1 | mod: %{@mod1 | path: &1}})
+
+      # Depth: 1
+      :ok = Application.delete_env(@otp_app, @p1name)
+      assert %Param{exist?: false, data: nil, error: nil} = read.(param.([@p1name]))
+
+      :ok = Application.put_env(@otp_app, @p1name, nil)
+      assert %Param{exist?: false, data: nil, error: nil} = read.(param.([@p1name]))
+
+      :ok = Application.put_env(@otp_app, @p1name, [])
+      assert %Param{exist?: false, data: nil, error: nil} = read.(param.([@p1name]))
+      :ok = Application.put_env(@otp_app, @p1name, %{})
+      assert %Param{exist?: false, data: nil, error: nil} = read.(param.([@p1name]))
+
+      :ok = Application.put_env(@otp_app, @p1name, [{@p1name, nil}])
+      assert %Param{exist?: true, data: nil, error: nil} = read.(param.([@p1name]))
+      :ok = Application.put_env(@otp_app, @p1name, %{@p1name => nil})
+      assert %Param{exist?: true, data: nil, error: nil} = read.(param.([@p1name]))
+
+      :ok = Application.put_env(@otp_app, @p1name, [{@p1name, :data}])
+      assert %Param{exist?: true, data: :data, error: nil} = read.(param.([@p1name]))
+      :ok = Application.put_env(@otp_app, @p1name, %{@p1name => :data})
+      assert %Param{exist?: true, data: :data, error: nil} = read.(param.([@p1name]))
+
+      # Depth: 2
+      :ok = Application.delete_env(@otp_app, @p1name)
+      assert %Param{exist?: false, data: nil, error: nil} = read.(param.([@p1name, :nested]))
+
+      :ok = Application.put_env(@otp_app, @p1name, nil)
+      assert %Param{exist?: false, data: nil, error: nil} = read.(param.([@p1name, :nested]))
+
+      :ok = Application.put_env(@otp_app, @p1name, [])
+      assert %Param{exist?: false, data: nil, error: nil} = read.(param.([@p1name, :nested]))
+      :ok = Application.put_env(@otp_app, @p1name, %{})
+      assert %Param{exist?: false, data: nil, error: nil} = read.(param.([@p1name, :nested]))
+
+      :ok = Application.put_env(@otp_app, @p1name, [nested: nil])
+      assert %Param{exist?: false, data: nil, error: nil} = read.(param.([@p1name, :nested]))
+      :ok = Application.put_env(@otp_app, @p1name, %{nested: nil})
+      assert %Param{exist?: false, data: nil, error: nil} = read.(param.([@p1name, :nested]))
+
+      :ok = Application.put_env(@otp_app, @p1name, [nested: []])
+      assert %Param{exist?: false, data: nil, error: nil} = read.(param.([@p1name, :nested]))
+      :ok = Application.put_env(@otp_app, @p1name, %{nested: %{}})
+      assert %Param{exist?: false, data: nil, error: nil} = read.(param.([@p1name, :nested]))
+
+      :ok = Application.put_env(@otp_app, @p1name, [nested: [{@p1name, nil}]])
+      assert %Param{exist?: true, data: nil, error: nil} = read.(param.([@p1name, :nested]))
+      :ok = Application.put_env(@otp_app, @p1name, %{nested: %{@p1name => nil}})
+      assert %Param{exist?: true, data: nil, error: nil} = read.(param.([@p1name, :nested]))
+
+      :ok = Application.put_env(@otp_app, @p1name, [nested: [{@p1name, :data}]])
+      assert %Param{exist?: true, data: :data, error: nil} = read.(param.([@p1name, :nested]))
+      :ok = Application.put_env(@otp_app, @p1name, %{nested: %{@p1name => :data}})
+      assert %Param{exist?: true, data: :data, error: nil} = read.(param.([@p1name, :nested]))
+
+
+      assert_raise FunctionClauseError, fn ->
+        :ok = Application.put_env(@otp_app, @p1name, :data)
+        assert %Param{exist?: false, data: nil, error: nil} = read.(param.([@p1name, :nested]))
+      end
+
+      Application.delete_env(@otp_app, @p1name)
+    end
   end
-
-  test "get_nested" do
-    get = &Param.get_nested/1
-    param = &(%Param{@p1 | mod: %{@mod1 | path: &1},
-                           exist?: true, data: &2})
-    err_text = "Unsupported enumerable"
-
-    # edge cases
-    assert get.(%{@p1 | exist?: false}) == %{@p1 | exist?: false}
-    assert get.(param.([], :data)) == %Param{@p1 | exist?: true, data: :data}
-    # enumerables
-    assert get.(param.(["w/e"], %{@p1name => :data})) == param.(["w/e"], :data)
-    assert get.(param.(["w/e"], [{@p1name, :data}])) == param.(["w/e"], :data)
-    assert get.(param.(["w/e"], %{})) == %{param.(["w/e"], nil) | exist?: false, data: nil}
-    assert get.(param.(["w/e"], [])) == %{param.(["w/e"], nil) | exist?: false, data: nil}
-    assert get.(param.(["w/e"], :data)) == %{param.(["w/e"], :data) | error: err_text}
-    # nested
-    assert get.(param.(["w/e", :key1, :key2], %{key1: [{:key2, %{@p1name => :data}}]})) ==
-                param.(["w/e", :key1, :key2], :data)
-
-    assert get.(param.(["w/e", :key1, :key2], %{key1: [{:key2, %{}}]})) ==
-              %{param.(["w/e", :key1, :key2], nil) | exist?: false, data: nil}
-
-    assert get.(param.(["w/e", :key1, :key2], %{key1: [{:key2, :data}]})) ==
-              %{param.(["w/e", :key1, :key2], %{key1: [{:key2, :data}]}) | error: err_text}
-  end
-
 
   defmodule TestSource do
     defstruct [:return]
@@ -99,24 +131,30 @@ defmodule ExConfig.ParamTest do
   defmodule TestType do
     use ExConfig.Type
     defstruct []
-    def handle(data, _), do: data
+
+    def handle({:error, reason}, _), do: {:error, reason}
+    def handle(data, _), do: {:ok, data}
+
     def default, do: :other_default
   end
 
   test "default_in_type" do
     assert Param.init(@mod1, @p1name, TestType, [])
-        == %Param{@p1 | type: %TestType{}, default: :other_default}
+        == %Param{@p1 | type: %TestType{}, default: &TestType.default/0}
+    assert TestType.default() == :other_default
   end
 
   test "convert_data" do
     convert = &Param.convert_data/1
     param = &(%Param{@p1 | exist?: true, error: nil, data: &1, type: %TestType{}})
 
-    assert convert.(param.({:ok, :data})) == param.(:data)
+    assert convert.(param.(:data)) == param.(:data)
     assert convert.(param.({:error, :reason})) ==
       %Param{param.({:error, :reason}) | error: :reason}
 
     assert convert.(@p1) == @p1
+
+    assert convert.(param.('data')) == param.("data")
   end
 
   test "check_requirement" do
@@ -135,8 +173,6 @@ defmodule ExConfig.ParamTest do
                            error: &2, data: &3})
 
     assert error.(param.(:throw, nil, :data)) == param.(:throw, nil, :data)
-
-    assert error.(param.(:tuple, :reason, :data)) == param.(:tuple, :reason, :data)
     assert error.(param.(:default, :reason, :data)) == param.(:default, nil, nil)
     assert catch_throw(error.(param.(:throw, :reason, :data))) == :reason
   end
@@ -148,10 +184,9 @@ defmodule ExConfig.ParamTest do
     fn1 = &(%{&1 | data: &1.data + 1})
     fn2 = &(%{&1 | data: &1.data * 10})
 
-    assert transform.(%Param{@p1 | data: 7, transform: fn1}).data == 8
     assert transform.(%Param{@p1 | data: 7, transform: [fn1]}).data == 8
     assert transform.(%Param{@p1 | data: 7, transform: [fn1, fn2]}).data == 80
-    assert transform.(%Param{@p1 | data: 7, transform: {__MODULE__, :transform_test}}).data == -6
+    assert transform.(%Param{@p1 | data: 7, transform: [{__MODULE__, :transform_test}]}).data == -6
 
     assert transform.(@p1) == @p1
   end
@@ -161,31 +196,8 @@ defmodule ExConfig.ParamTest do
 
     assert get.(%Param{@p1 | error: :reason}) == {:error, :reason}
     assert get.(%Param{@p1 | data: :data}) == :data
-    assert get.(%Param{@p1 | data: :data, mod: %{@mod1 | on_error: :tuple}}) == {:ok, :data}
     assert get.(%Param{@p1 | data: nil, default: :default}) == :default
     assert get.(%Param{@p1 | data: nil, default: fn -> :default_fn end}) == :default_fn
     assert get.(%Param{@p1 | data: nil, default: nil}) == nil
-  end
-
-  test "until_error" do
-    until = &Param.until_error/2
-
-    fn1 = &(%{&1 | data: &1.data + 1})
-    fn2 = &(%{&1 | data: &1.data * 10})
-    fn3 = &(%{&1 | data: &1.data - 13, error: :reason})
-    assert until.(%Param{@p1 | data: 7}, []) == %Param{@p1 | data: 7}
-    assert until.(%Param{@p1 | data: 7}, [fn1]) == %Param{@p1 | data: 8}
-    assert until.(%Param{@p1 | data: 7}, [fn1, fn2]) == %Param{@p1 | data: 80}
-    assert until.(%Param{@p1 | data: 7}, [fn3, fn2]) == %Param{@p1 | data: -6, error: :reason}
-
-    fn1 = &({:ok, &1 + 1})
-    fn2 = &({:ok, &1 * 10})
-    fn3 = &({:error, &1})
-    fn4 = &(&1 + 4)
-    assert until.(7, []) == {:ok, 7}
-    assert until.(7, [fn1]) == {:ok, 8}
-    assert until.(7, [fn1, fn2]) == {:ok, 80}
-    assert until.(7, [fn3, fn2]) == {:error, 7}
-    assert until.(7, [fn4, fn2]) == {:ok, 110}
   end
 end

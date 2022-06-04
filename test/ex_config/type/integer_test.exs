@@ -2,9 +2,11 @@ defmodule ExConfig.Type.IntegerTest do
   use ExUnit.Case, async: true
   alias ExConfig.Type.{Integer, Number}
   alias ExConfig.Param.TypeOptionError
+  alias ExConfig.Utils.NumRange
 
-  defp instance(opts \\ []),
-    do: ExConfig.Param.create_type_instance(Integer, opts)
+  defp instance(opts \\ []) do
+    ExConfig.Param.create_type_instance(Integer, opts)
+  end
 
   test "init/1" do
     assert %Integer{} == instance()
@@ -39,26 +41,19 @@ defmodule ExConfig.Type.IntegerTest do
       assert handle.("  -4  ") == {:ok, -4}
     end
 
-    test "when valid charlist" do
-      handle = &Integer.handle(&1, instance())
-
-      assert handle.('42') == {:ok, 42}
-      assert handle.('-42') == {:ok, -42}
-      assert handle.('0') == {:ok, 0}
-      assert handle.('12345678901234567890') == {:ok, 12345678901234567890}
-    end
-
     test "when invalid data" do
       handle = &Integer.handle(&1, instance())
-      err = &Integer.error(:bad_data, &1)
+      should_error = fn value ->
+        assert handle.(value) == Integer.error(:bad_data, value)
+      end
 
-      assert handle.("0.01") == err.("0.01")
-      assert handle.("0.01.01") == err.("0.01.01")
-      assert handle.('0.01.01') == err.("0.01.01")
-      assert handle.("") == err.("")
-      assert handle.("abc") == err.("abc")
-      assert handle.(nil) == err.(nil)
-      assert handle.(:ok) == err.(:ok)
+      should_error.("0.01")
+      should_error.("0.01.01")
+      should_error.('0.01.01')
+      should_error.("")
+      should_error.("abc")
+      should_error.(nil)
+      should_error.(:ok)
     end
   end
 
@@ -77,15 +72,18 @@ defmodule ExConfig.Type.IntegerTest do
 
     test "when number is out" do
       handle = &Integer.handle(&1, instance(range: &2))
-      err = &Number.error(:out_of_range, {&1, &2})
+      should_error = fn value, range ->
+        {:ok, range2} = NumRange.validate(range)
+        assert handle.(value, range) == Number.error(:out_of_range, {value, range2})
+      end
 
-      assert handle.(101, {0, 100}) == err.(101, {0, 100})
-      assert handle.(101, 0..100) == err.(101, {0, 100})
-      assert handle.(101, 100..0) == err.(101, {0, 100})
-      assert handle.(0, {:gt, 100}) == err.(0, {:gt, 100})
-      assert handle.(0, {:ge, 100}) == err.(0, {:ge, 100})
-      assert handle.(101, {:lt, 100}) == err.(101, {:lt, 100})
-      assert handle.(101, {:le, 100}) == err.(101, {:le, 100})
+      should_error.(101, {0, 100})
+      should_error.(101, 0..100)
+      should_error.(101, 100..0)
+      should_error.(0, {:gt, 100})
+      should_error.(0, {:ge, 100})
+      should_error.(101, {:lt, 100})
+      should_error.(101, {:le, 100})
     end
   end
 
@@ -105,6 +103,21 @@ defmodule ExConfig.Type.IntegerTest do
       assert handle.("0b10101010", 2) == {:ok, 170}
       assert handle.("0o12345670", 8) == {:ok, 2739128}
       assert handle.("0xabcdef09", 16) == {:ok, 2882400009}
+    end
+
+    test "and invalid prefix" do
+      handle = &Integer.handle(&1, instance(base: &2))
+      should_error = fn value, base ->
+        assert handle.(value, base) == Integer.error(:bad_data, value)
+      end
+
+      should_error.("0b10101010", 8)
+      should_error.("0o12345670", 2)
+      should_error.("0xabcdef09", 10)
+
+      should_error.("0b0b10101010", 2)
+      should_error.("0o0o12345670", 8)
+      should_error.("0x0xabcdef09", 16)
     end
   end
 
