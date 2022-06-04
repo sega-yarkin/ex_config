@@ -48,6 +48,29 @@ defmodule ExConfigTest do
       assert %ExConfig.Mod{otp_app: @otp_app,
                            options: [only_not_nil: true]} == mod_data()
     end
-  end
 
+    test "with path" do
+      content =
+        quote do
+          use ExConfig, otp_app: unquote(@otp_app),
+                        path: [:one, :two]
+        end
+
+      {:module, @mod_name, _, _} = mod_create(content)
+      assert %ExConfig.Mod{otp_app: @otp_app,
+                           path: [:one, :two]} == mod_data()
+    end
+
+    test "with path fails if non-atom is used" do
+      content =
+        quote do
+          use ExConfig, otp_app: unquote(@otp_app),
+                        path: ["part"]
+        end
+
+      assert_raise RuntimeError, "non-atom element provided as a path item", fn ->
+        mod_create(content)
+      end
+    end
+  end
 end

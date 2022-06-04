@@ -85,6 +85,18 @@ defmodule ExConfig.Cache.PersistentTermTest do
                                                   c: [data: "siː"],
                                                   b: [data: "biː"]]
 
+    # Access with macro and options
+    assert PTCache.config(id: :default).env1 == "env1_value"
+    assert PTCache.config(id: :default).env2 == "env2_value"
+    assert PTCache.config(id: :default).dyn1 == 42
+    assert PTCache.config(id: :default).kw1.kw1_env1 == "not default"
+    assert PTCache.config(id: :default).kw1.kw1_dyn1 == :booo
+    assert PTCache.config(id: :default).get_resource1[:a] == [data: "eɪ"]
+    assert PTCache.config(id: :default).get_resource2[:d] == [data: "diː"]
+    assert PTCache.config(id: :default).get_resource1_names == [a: [data: "eɪ"],
+                                                                c: [data: "siː"],
+                                                                b: [data: "biː"]]
+
     Application.put_env(@otp_app, :env2, "env2_another_value")
     assert PTCache.get() == cache
     {:ok, _} = PTCache.wrap(@mod_name)
