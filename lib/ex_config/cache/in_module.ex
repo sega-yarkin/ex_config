@@ -20,35 +20,47 @@ defmodule ExConfig.Cache.InModule do
     meta = source.__meta__()
     data = source._all()
 
-    parameters =
-      Enum.map(Keyword.fetch!(meta, :parameters), fn {name, _} ->
-        quote do
-          def unquote(name)(), do: unquote(Macro.escape(data[name]))
-        end
-      end)
-
-    Enum.each(Keyword.fetch!(meta, :keywords), fn {name, mod} ->
-      mod_target = Mod.child_mod_name(target, name)
-      {:ok, _} = compile_module(mod, mod_target)
-    end)
-
-    resources =
-      Enum.map(Keyword.fetch!(meta, :resources), fn {_name, %{one: one, all: all}} ->
-        instances = apply(source, all, [])
-        quote do
-          def unquote(all)(), do: unquote(Macro.escape(instances))
-          def unquote(one)(name), do: unquote(all)()[name]
-        end
-      end)
-
-    all =
-      quote do
-        def _all(), do: unquote(Macro.escape(data))
-      end
+    :ok = generate_keyword_modules(meta, target)
+    parameters = get_parameters_quote(meta, data)
+    resources = get_resources_quote(meta, source)
+    all = get_all_quote(data)
 
     content = List.flatten([parameters, all, resources])
     {:module, module, _, _} =
         Module.create(target, content, Macro.Env.location(__ENV__))
     {:ok, module}
+  end
+
+  defp get_parameters_quote(meta, data) do
+    for {name, _} <- Keyword.fetch!(meta, :parameters) do
+      quote do
+        def unquote(name)(), do: unquote(Macro.escape(data[name]))
+      end
+    end
+  end
+
+  defp generate_keyword_modules(meta, target) do
+    for {name, mod} <- Keyword.fetch!(meta, :keywords) do
+      mod_target = Mod.child_mod_name(target, name)
+      {:ok, _} = compile_module(mod, mod_target)
+    end
+    :ok
+  end
+
+  defp get_resources_quote(meta, source) do
+    for {_name, %{one: one, all: all}} <- Keyword.fetch!(meta, :resources) do
+      instances = apply(source, all, [])
+
+      quote do
+        def unquote(all)(), do: unquote(Macro.escape(instances))
+        def unquote(one)(name), do: unquote(all)()[name]
+      end
+    end
+  end
+
+  defp get_all_quote(data) do
+    quote do
+      def _all(), do: unquote(Macro.escape(data))
+    end
   end
 end
