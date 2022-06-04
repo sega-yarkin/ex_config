@@ -1,5 +1,5 @@
 defmodule ExConfig do
-  @spec __using__(Keyword.t) :: Macro.t
+  @spec __using__(Keyword.t()) :: Macro.t()
   defmacro __using__(opts) do
     unless Keyword.get(opts, :otp_app),
       do: raise ArgumentError, "'otp_app' option is required"

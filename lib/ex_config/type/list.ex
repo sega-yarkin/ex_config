@@ -5,7 +5,7 @@ defmodule ExConfig.Type.List do
   alias ExConfig.Type
 
   # @type result() :: list(any())
-  @type item_def() :: {module, Keyword.t}
+  @type item_def() :: {module(), Keyword.t()}
 
 
   defstruct item: %Type.String{},
@@ -47,11 +47,11 @@ defmodule ExConfig.Type.List do
   def handle(data, opts), do: do_handle(data, opts)
 
   @doc false
-  @spec error(:bad_data, any) :: {:error, String.t}
+  @spec error(:bad_data, any()) :: {:error, String.t()}
   def error(:bad_data, data), do: {:error, "Cannot handle '#{inspect(data)}' as an input"}
 
 
-  @spec validate_item(any) :: ExConfig.Type.validator_result(item_def)
+  @spec validate_item(any()) :: ExConfig.Type.validator_result(item_def())
   defp validate_item(nil), do: :skip
   defp validate_item({type, opts}) when is_atom(type) and is_list(opts) do
     true = 1 in :proplists.get_all_values(:init, type.__info__(:functions))
@@ -62,7 +62,7 @@ defmodule ExConfig.Type.List do
   defp validate_item(type) when is_atom(type), do: validate_item({type, []})
   defp validate_item(_), do: :error
 
-  @spec validate_delim(any) :: ExConfig.Type.validator_result(String.t | Regex.t)
+  @spec validate_delim(any()) :: ExConfig.Type.validator_result(String.t() | Regex.t())
   defp validate_delim(delim) when is_binary(delim), do: {:ok, delim}
   defp validate_delim(%Regex{} = delim), do: {:ok, delim}
   defp validate_delim([_|_] = delim) do
@@ -71,24 +71,22 @@ defmodule ExConfig.Type.List do
   defp validate_delim(nil), do: :skip
   defp validate_delim(_), do: :error
 
-  @spec do_handle(any, t) :: {:ok, any} | {:error, String.t}
+
+  @spec do_handle(any(), t()) :: {:ok, any()} | {:error, String.t()}
   defp do_handle(data, %{delim: delim, keep_empty?: keep_empty?, item: item})
                  when is_binary(data) do
     data
     |> String.split(delim, trim: not keep_empty?)
-    |> Enum.reduce_while([], &do_handle_reducer(item, &1, &2))
-    |> case do
-      {:error, reason}            -> {:error, reason}
-      result when is_list(result) -> {:ok, Enum.reverse(result)}
-    end
+    |> do_handle_reduce(item, [])
   end
   defp do_handle(data, opts) when is_list(data), do: do_handle(to_string(data), opts)
   defp do_handle(data, _opts), do: error(:bad_data, data)
 
-  defp do_handle_reducer(%{__struct__: item_type} = item, elem, acc) do
+  defp do_handle_reduce([], _, acc), do: {:ok, Enum.reverse(acc)}
+  defp do_handle_reduce([elem | rest], %{__struct__: item_type} = item, acc) do
     case item_type.handle(elem, item) do
-      {:ok, parsed}    -> {:cont, [parsed | acc]}
-      {:error, reason} -> {:halt, {:error, reason}}
+      {:ok, parsed}    -> do_handle_reduce(rest, item, [parsed | acc])
+      {:error, reason} -> {:error, reason}
     end
   end
 

@@ -41,15 +41,6 @@ defmodule ExConfig.Type.IntegerTest do
       assert handle.("  -4  ") == {:ok, -4}
     end
 
-    test "when valid charlist" do
-      handle = &Integer.handle(&1, instance())
-
-      assert handle.('42') == {:ok, 42}
-      assert handle.('-42') == {:ok, -42}
-      assert handle.('0') == {:ok, 0}
-      assert handle.('12345678901234567890') == {:ok, 12345678901234567890}
-    end
-
     test "when invalid data" do
       handle = &Integer.handle(&1, instance())
       should_error = fn value ->

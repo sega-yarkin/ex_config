@@ -27,15 +27,6 @@ defmodule ExConfig.Type.BooleanTest do
       assert handle.("No") == {:ok, false}
     end
 
-    test "when valid charlist" do
-      handle = &Boolean.handle(&1, instance())
-
-      assert handle.('true') == {:ok, true}
-      assert handle.('yes') == {:ok, true}
-      assert handle.('false') == {:ok, false}
-      assert handle.('no') == {:ok, false}
-    end
-
     test "when valid boolean" do
       handle = &Boolean.handle(&1, instance())
 
@@ -48,7 +39,6 @@ defmodule ExConfig.Type.BooleanTest do
       err = &Boolean.error(:bad_data, &1)
 
       assert handle.("tru") == err.("tru")
-      assert handle.('tru') == err.("tru")
       assert handle.("") == err.("")
       assert handle.(nil) == err.(nil)
       assert handle.(:ok) == err.(:ok)

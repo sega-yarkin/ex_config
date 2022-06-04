@@ -13,11 +13,11 @@ defmodule ExConfig.Source.System do
     expand:    boolean(),
   }
 
-  @impl true
+  @impl ExConfig.Source
   def handle(%{name: name, default: default, expand: expand}, param) do
     find_fn = case expand do
-      true  -> &get_env_by_pattern(&1, param)
       false -> &System.get_env/1
+      true  -> &get_env_by_pattern(&1, param)
     end
 
     data = Enum.find_value(List.wrap(name), default, find_fn)
@@ -26,6 +26,7 @@ defmodule ExConfig.Source.System do
 
   defp get_env_by_pattern(pattern, %{name: name} = _param) do
     name = name |> Atom.to_string() |> String.upcase()
+
     pattern
     |> String.replace("${name}", name)
     |> System.get_env()

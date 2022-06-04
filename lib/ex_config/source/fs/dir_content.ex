@@ -9,7 +9,7 @@ defmodule ExConfig.Source.FS.DirContent do
     default: binary() | nil,
   }
 
-  @impl true
+  @impl ExConfig.Source
   def handle(%{path: path, default: default}, _) do
     data = Enum.find_value(List.wrap(path), default, &get_dir_content/1)
     {:ok, data}

@@ -10,20 +10,20 @@ defmodule ExConfig.Type.Enum do
     values: nonempty_list(atom()),
   }
 
-  @impl true
+  @impl ExConfig.Type
   def validators, do: [
     values: &validate_values/1,
   ]
 
-  @impl true
+  @impl ExConfig.Type
   def handle(data, opts), do: do_handle(data, opts)
 
   @doc false
-  @spec error(:bad_data | :wrong_value, any) :: {:error, String.t}
+  @spec error(:bad_data | :wrong_value, any()) :: {:error, String.t()}
   def error(:bad_data, data), do: {:error, "Cannot handle '#{inspect(data)}' as an enum value"}
   def error(:wrong_value, {data, values}), do: {:error, "Wrong enum value '#{inspect(data)}', only accept #{inspect(values)}"}
 
-  @spec validate_values(any) :: ExConfig.Type.validator_result(list(atom))
+  @spec validate_values(any()) :: ExConfig.Type.validator_result(nonempty_list(atom()))
   defp validate_values([_|_] = values) do
     if Enum.all?(values, &is_atom/1), do: {:ok, values}, else: :error
   end

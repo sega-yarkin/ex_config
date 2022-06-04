@@ -6,6 +6,9 @@ defmodule ExConfig.Type.Raw do
 
   defstruct []
 
-  @impl true
+  @impl ExConfig.Type
+  def preserve_charlist?, do: true
+
+  @impl ExConfig.Type
   def handle(data, _), do: {:ok, data}
 end

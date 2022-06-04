@@ -4,16 +4,18 @@ defmodule ExConfig.Cache.PersistentTerm do
   """
   @behaviour ExConfig.Cache
 
-  @impl true
-  @spec wrap(module, Keyword.t) :: {:ok, map}
+  @type opts() :: [id: term()]
+
+  @impl ExConfig.Cache
+  @spec wrap(module(), opts()) :: {:ok, map()}
   def wrap(module, opts \\ []) do
     cache = get_config_data(module)
     :persistent_term.put(get_pt_id(opts), cache)
     {:ok, cache}
   end
 
-  @impl true
-  @spec get(Keyword.t) :: map
+  @impl ExConfig.Cache
+  @spec get(opts()) :: map()
   def get(opts \\ []) do
     :persistent_term.get(get_pt_id(opts))
   end
@@ -26,13 +28,14 @@ defmodule ExConfig.Cache.PersistentTerm do
   end
 
 
-  @spec get_pt_id(Keyword.t) :: {module, atom}
+  @spec get_pt_id(opts()) :: {module(), term()}
+  defp get_pt_id([]), do: {__MODULE__, :default}
   defp get_pt_id(opts) do
     id = Keyword.get(opts, :id, :default)
     {__MODULE__, id}
   end
 
-  @spec get_config_data(module) :: map
+  @spec get_config_data(module()) :: map()
   defp get_config_data(module) do
     meta = module.__meta__()
     data = module._all()

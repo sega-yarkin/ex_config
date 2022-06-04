@@ -19,12 +19,12 @@ defmodule ExConfig.Source do
                          | {:ok, data :: any()}
                          | {:error, reason :: any()}
 
-  @callback __struct__(any) :: any
-  @callback handle(source :: struct,
-                   param :: %ExConfig.Param{}) :: handle_result
+  @callback __struct__(any()) :: any()
+  @callback handle(source :: struct(),
+                   param :: ExConfig.Param.t()) :: handle_result()
 
 
-  @spec get_source_occurrences(module, (Keyword.t -> boolean)) :: [value]
+  @spec get_source_occurrences(module(), (Keyword.t() -> boolean())) :: [value()]
   def get_source_occurrences(source, filter \\ fn _ -> true end)
                              when is_atom(source)
                               and is_function(filter, 1) do
@@ -32,7 +32,7 @@ defmodule ExConfig.Source do
   end
 
   @doc false
-  @spec get_source_occurrences(module, function, Keyword.t) :: [value]
+  @spec get_source_occurrences(module(), function(), Keyword.t()) :: [value()]
   def get_source_occurrences(source, filter, all_envs) do
     Enum.reduce(all_envs, [], fn ({_app, envs}, acc) ->
       deep_source_search(source, filter, envs, acc)
@@ -40,11 +40,12 @@ defmodule ExConfig.Source do
   end
 
 
-  @spec deep_source_search(module, function, any, list) :: [value]
+  @spec deep_source_search(module(), function(), any(), list()) :: [value()]
   defp deep_source_search(source, filter, envs, acc)
                           when is_list(envs) or is_map(envs) do
     Enum.reduce(envs, acc, &deep_source_search(source, filter, &1, &2))
   end
+
   defp deep_source_search(source, filter, {source, options}, acc) when is_list(options) do
     if Keyword.keyword?(options) do
       if filter.(options) do
@@ -56,9 +57,10 @@ defmodule ExConfig.Source do
       deep_source_search(source, filter, options, acc)
     end
   end
+
   defp deep_source_search(source, filter, {_key, value}, acc) do
     deep_source_search(source, filter, value, acc)
   end
-  defp deep_source_search(_, _, _, acc), do: acc
 
+  defp deep_source_search(_, _, _, acc), do: acc
 end

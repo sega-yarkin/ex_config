@@ -15,9 +15,7 @@ defmodule ExConfig.Type.StringTest do
       handle = &String.handle(&1, instance())
 
       assert handle.("text") == {:ok, "text"}
-      assert handle.('text') == {:ok, "text"}
       assert handle.("") == {:ok, ""}
-      assert handle.('') == {:ok, ""}
     end
 
     test "when invalid data" do

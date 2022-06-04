@@ -1,9 +1,10 @@
 defmodule ExConfig.Type do
-  @callback __struct__(any) :: any
-  @callback validators() :: Keyword.t(validator(any))
-  @callback init(options :: Keyword.t) :: struct
-  @callback default() :: any
-  @callback handle(data :: any, opts :: struct) :: {:ok, any} | {:error, String.t}
+  @callback __struct__(any()) :: any()
+  @callback validators() :: Keyword.t(validator(any()))
+  @callback init(options :: Keyword.t()) :: struct()
+  @callback default() :: any()
+  @callback handle(data :: any(), opts :: struct()) :: {:ok, any()} | {:error, String.t()}
+  @callback preserve_charlist?() :: boolean()
 
   @type t() :: struct()
 
@@ -22,7 +23,10 @@ defmodule ExConfig.Type do
       @impl ExConfig.Type
       def default, do: nil
 
-      defoverridable init: 1, validators: 0, default: 0
+      @impl ExConfig.Type
+      def preserve_charlist?, do: false
+
+      defoverridable init: 1, validators: 0, default: 0, preserve_charlist?: 0
     end
   end
 
@@ -31,8 +35,8 @@ defmodule ExConfig.Type do
   @type validator_result(t) :: {:ok, t} | :skip | :error
   @type validator(t) :: (any() -> validator_result(t))
 
-  @spec validate_options(Keyword.t(validator(any)), Keyword.t(any))
-        :: Keyword.t(any) | {:error, {name :: atom, value :: any}}
+  @spec validate_options(Keyword.t(validator(any())), Keyword.t(any()))
+        :: Keyword.t(any) | {:error, {name :: atom(), value :: any()}}
   def validate_options(validators, options) do
     Enum.reduce_while(
       validators,
@@ -47,15 +51,15 @@ defmodule ExConfig.Type do
     )
   end
 
-  @spec validate_options!(Keyword.t(validator(any)), Keyword.t(any), module)
-        :: Keyword.t(any)
+  @spec validate_options!(Keyword.t(validator(any())), Keyword.t(any()), module())
+        :: Keyword.t(any())
   def validate_options!(validators, options, type) do
     with {:error, {name, value}} <- validate_options(validators, options) do
       raise Err, type: type, name: name, value: value
     end
   end
 
-  @spec validator_boolean(any) :: validator_result(boolean)
+  @spec validator_boolean(any()) :: validator_result(boolean())
   def validator_boolean(nil), do: :skip
   def validator_boolean(val) when is_boolean(val), do: {:ok, val}
   def validator_boolean(_), do: :error

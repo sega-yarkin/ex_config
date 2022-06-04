@@ -2,7 +2,7 @@ defmodule ExConfig.MixProject do
   use Mix.Project
 
   @source_url "https://github.com/sega-yarkin/ex_config"
-  @version "0.2.1"
+  @version "0.3.0"
 
   def project() do
     [
@@ -27,7 +27,7 @@ defmodule ExConfig.MixProject do
     [
       {:credo, "~> 1.6.0", only: :dev, runtime: false},
       {:dialyxir, "~> 1.1.0", only: :dev, runtime: false},
-      {:excoveralls, "~> 0.14.4", only: :dev, runtime: false},
+      {:excoveralls, "~> 0.14.4", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.24", only: :dev, runtime: false},
     ]
   end

@@ -27,19 +27,13 @@ defmodule ExConfig.Type.ModuleNameTest do
       handle = &ModuleName.handle(&1, instance(should_exist?: &2))
 
       assert handle.(":lists", true) == {:ok, :lists}
-      assert handle.(':lists', true) == {:ok, :lists}
       assert handle.(":some_module", false) == {:ok, :some_module}
-      assert handle.(':some_module', false) == {:ok, :some_module}
 
       assert handle.("Elixir.Enum", true) == {:ok, :"Elixir.Enum"}
-      assert handle.('Elixir.Enum', true) == {:ok, :"Elixir.Enum"}
       assert handle.("Elixir.Something", false) == {:ok, :"Elixir.Something"}
-      assert handle.('Elixir.Something', false) == {:ok, :"Elixir.Something"}
 
       assert handle.("Enum", true) == {:ok, :"Elixir.Enum"}
-      assert handle.('Enum', true) == {:ok, :"Elixir.Enum"}
       assert handle.("Something", false) == {:ok, :"Elixir.Something"}
-      assert handle.('Something', false) == {:ok, :"Elixir.Something"}
     end
 
     test "when invalid input" do

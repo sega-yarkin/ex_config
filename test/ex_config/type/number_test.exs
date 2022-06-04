@@ -39,18 +39,6 @@ defmodule ExConfig.Type.NumberTest do
       assert handle.("  -0.04  ") == {:ok, -0.04}
     end
 
-    test "when valid charlist" do
-      handle = &Number.handle(&1, instance())
-
-      assert handle.('42') == {:ok, 42.0}
-      assert handle.('-42') == {:ok, -42.0}
-      assert handle.('0') == {:ok, 0.0}
-      assert handle.('12345678901234567890') == {:ok, 1.2345678901234567e19}
-      assert handle.('0.0001') == {:ok, 0.0001}
-      assert handle.('12345.67890') == {:ok, 12345.6789}
-      assert handle.('-0.000004') == {:ok, -0.000004}
-    end
-
     test "when invalid data" do
       handle = &Number.handle(&1, instance())
       should_error = fn value ->

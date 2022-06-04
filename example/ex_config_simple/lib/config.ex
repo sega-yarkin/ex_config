@@ -18,6 +18,9 @@ defmodule ExConfigSimple.Config do
   # `env <name>[, <type>[, <options>]]`
   env :auth_enabled, Boolean, default: false
   env :request_timeout, Integer, default: 10_000
+  @doc """
+  Returns server ID.
+  """
   env :server_id, String, required: true
   env :main_color, Enum, values: @main_colors
   env :extra_colors, List, item: {Integer, range: 0..0xffffff, base: 16}, delim: ","
@@ -60,4 +63,6 @@ defmodule ExConfigSimple.Config do
   dyn :ecto_repos, do: [ExConfigSimple.Repo]
   resource :ecto_repo, :ecto_repos, use: EctoPostgres
 
+  # There is no need for list of instances in case of only one item.
+  resource :single_repo, use: EctoPostgres
 end

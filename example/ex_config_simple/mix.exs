@@ -9,7 +9,7 @@ defmodule ExConfigSimple.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       dialyzer: [
-        plt_add_apps: [:erts, :kernel, :stdlib],
+        plt_add_apps: [:erts, :kernel, :stdlib, :eprof],
         ignore_warnings: ".dialyzer.ignore",
         flags: ["-Wunderspecs", "-Werror_handling"],
       ],

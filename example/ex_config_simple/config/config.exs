@@ -32,3 +32,7 @@ config :ex_config_simple, ExConfigSimple.Repo,
   database: "example",
   username: "postgres",
   password: {System, name: "PG_PASSWORD", sensitive: true}
+
+config :ex_config_simple, :single_repo,
+  hostname: "127.0.0.2",
+  port: 5434
