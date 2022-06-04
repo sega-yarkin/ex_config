@@ -4,7 +4,7 @@ defmodule ExConfig.Cache.InModule do
   @behaviour ExConfig.Cache
   alias ExConfig.Mod
 
-  @type opts() :: [target: module()]
+  @type opts() :: [{:target, module()}, ...]
 
   @impl ExConfig.Cache
   @spec wrap(module(), opts()) :: {:ok, module()}

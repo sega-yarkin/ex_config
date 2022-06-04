@@ -87,7 +87,7 @@ defmodule ExConfig.Param do
     end
   end
 
-  @spec get_nested(any(), [any()]) :: {:ok, any()} | :error
+  @spec get_nested(Enumerable.t() | nil, [any()]) :: {:ok, any()} | :error
   defp get_nested(data, path) do
     case {data, path} do
       {nil, _} -> :error
