@@ -40,11 +40,12 @@ defmodule ExConfig.Cache.InModule do
   end
 
   defp generate_keyword_modules(meta, target) do
-    for {name, mod} <- Keyword.fetch!(meta, :keywords) do
+    keywords = Keyword.fetch!(meta, :keywords)
+
+    Enum.each(keywords, fn {name, mod} ->
       mod_target = Mod.child_mod_name(target, name)
       {:ok, _} = compile_module(mod, mod_target)
-    end
-    :ok
+    end)
   end
 
   defp get_resources_quote(meta, source) do
