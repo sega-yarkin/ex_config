@@ -1,6 +1,6 @@
 # ExConfig
 
-[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/sega-yarkin/ex_config/Elixir%20Tests?style=flat-square)](https://github.com/sega-yarkin/ex_config/actions/workflows/elixir.yml)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/sega-yarkin/ex_config/elixir.yml?branch=master&style=flat-square)](https://github.com/sega-yarkin/ex_config/actions/workflows/elixir.yml)
 [![Hex.pm](https://img.shields.io/hexpm/v/ex_config.svg?style=flat-square)](https://hex.pm/packages/ex_config)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-blue.svg?style=flat-square)](https://hexdocs.pm/ex_config/)
 [![Coveralls](https://img.shields.io/coveralls/github/sega-yarkin/ex_config?style=flat-square)](https://coveralls.io/github/sega-yarkin/ex_config?branch=master)
