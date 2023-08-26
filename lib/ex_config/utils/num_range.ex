@@ -22,7 +22,34 @@ defmodule ExConfig.Utils.NumRange do
     {:ok, {op, num}}
   end
 
+  def validate(str) when is_binary(str) do
+    with {op, str_number} <- split_str_range(str),
+         {:ok, number} <- parse_number(String.trim(str_number)) do
+      {:ok, {op, number}}
+    end
+  end
+
   def validate(_), do: :error
+
+  @spec split_str_range(String.t()) :: {atom(), String.t()} | :error
+  defp split_str_range(">=" <> number), do: {:ge, number}
+  defp split_str_range(">"  <> number), do: {:gt, number}
+  defp split_str_range("<=" <> number), do: {:le, number}
+  defp split_str_range("<"  <> number), do: {:lt, number}
+  defp split_str_range(_), do: :error
+
+  @spec parse_number(String.t()) :: {:ok, number()} | :error
+  defp parse_number(str) do
+    case Integer.parse(str) do
+      {number, ""} -> {:ok, number}
+
+      _ ->
+        case Float.parse(str) do
+          {number, ""} -> {:ok, number}
+          _ -> :error
+        end
+    end
+  end
 
 
   @spec in_range?(number(), t()) :: boolean()

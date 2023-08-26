@@ -47,6 +47,17 @@ defmodule ExConfig.Utils.NumRangeTest do
       # 10..20//2
       assert validate(range.(10, 20, 2)) == :error
     end
+
+    test "stringified op and number" do
+      import NumRange, only: [validate: 1]
+
+      assert validate(">10" ) == {:ok, {:gt, 10}}
+      assert validate(">=10") == {:ok, {:ge, 10}}
+      assert validate("<10" ) == {:ok, {:lt, 10}}
+      assert validate("<=10") == {:ok, {:le, 10}}
+
+      assert validate("> 10") == {:ok, {:gt, 10}}
+    end
   end
 
   test "in_range?/2" do
